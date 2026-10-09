@@ -1,4 +1,4 @@
-﻿package id.p2kd.kalisalak.coklit.ui.screens
+package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -38,7 +38,7 @@ fun HouseFormScreen(
     val sessionManager = remember { ApiClient.getSessionManager(context) }
     val coroutineScope = rememberCoroutineScope()
     val userProfile = sessionManager.getUserProfile()
-    val defaultRw = (userProfile?.assignedRw?.replace(/\D/g.toRegex(), "") ?: "01").padStart(2, '0')
+    val defaultRw = (userProfile?.assignedRw?.replace(Regex("\\D"), "") ?: "01").padStart(2, '0')
 
     var alamat by remember { mutableStateOf(existingRumah?.alamat ?: "") }
     var rt by remember { mutableStateOf(existingRumah?.rt ?: "01") }
@@ -175,8 +175,7 @@ fun HouseFormScreen(
                 onClick = {
                     if (alamat.isBlank()) {
                         errorMessage = "Alamat fisik rumah wajib diisi"
-                        return@Button
-                    }
+                    } else {
                     isLoading = true
                     errorMessage = null
 
@@ -205,10 +204,11 @@ fun HouseFormScreen(
                                 errorMessage = res.body()?.message ?: "Gagal menyimpan data rumah"
                             }
                         } catch (e: Exception) {
-                            errorMessage = "Koneksi gagal: "
+                            errorMessage = "Koneksi gagal: ${e.message ?: "Periksa koneksi internet."}"
                         } finally {
                             isLoading = false
                         }
+                    }
                     }
                 },
                 enabled = !isLoading,
@@ -228,3 +228,4 @@ fun HouseFormScreen(
         }
     }
 }
+

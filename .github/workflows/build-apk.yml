@@ -37,8 +37,11 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
+      - name: Compile Kotlin
+        run: ./gradlew --no-daemon --stacktrace :app:compileDebugKotlin
+
       - name: Build Debug APK
-        run: ./gradlew --no-daemon --stacktrace assembleDebug
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
       - name: Validate Generated APK & Generate Checksum
         run: |

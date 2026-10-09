@@ -1,4 +1,4 @@
-﻿package id.p2kd.kalisalak.coklit.ui.screens
+package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -46,7 +46,7 @@ fun TaskListScreen(
                     errorMessage = res.body()?.message ?: "Gagal memuat daftar tugas"
                 }
             } catch (e: Exception) {
-                errorMessage = "Gagal memuat: "
+                errorMessage = "Gagal memuat: ${e.message ?: "Periksa koneksi internet."}"
             } finally {
                 isLoading = false
             }
@@ -125,7 +125,7 @@ fun TaskListScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Total Rumah Terdata: ",
+                        text = "Total Rumah Terdata: ${filteredList.size}",
                         fontSize = 13.sp,
                         color = Color.Gray,
                         fontWeight = FontWeight.Medium
@@ -192,12 +192,12 @@ fun TaskListScreen(
                                                 fontSize = 15.sp
                                             )
                                             Text(
-                                                text = "RT  / RW  • TPS: ",
+                                                text = "RT ${house.rt} / RW ${house.rw}  •  TPS: ${house.tps ?: "-"}",
                                                 fontSize = 13.sp,
                                                 color = Color.DarkGray
                                             )
                                             Text(
-                                                text = "Token QR: ",
+                                                text = "Token QR: ${house.qrToken}",
                                                 fontSize = 12.sp,
                                                 color = Color.Gray
                                             )

@@ -59,7 +59,7 @@ fun KKListScreen(
                     errorMessage = res.body()?.message ?: "Gagal memuat data keluarga"
                 }
             } catch (e: Exception) {
-                errorMessage = "Koneksi bermasalah: "
+                errorMessage = "Koneksi bermasalah: ${e.message ?: "Periksa koneksi internet."}"
             } finally {
                 isLoading = false
             }
@@ -169,7 +169,7 @@ fun KKListScreen(
                                     fontSize = 14.sp
                                 )
                                 Text(
-                                    text = "Total KK Terdaftar:  KK",
+                                    text = "Total KK Terdaftar: ${rumah?.kartuKeluarga?.size ?: 0} KK",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.primary
@@ -216,16 +216,16 @@ fun KKListScreen(
                                     Spacer(modifier = Modifier.width(16.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "No. KK: ",
+                                            text = "No. KK: ${kk.noKk}",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 15.sp
                                         )
                                         Text(
-                                            text = "Kepala Keluarga: ",
+                                            text = "Kepala Keluarga: ${kk.kepalaKeluargaNama ?: "-"}",
                                             fontSize = 14.sp
                                         )
                                         Text(
-                                            text = "Jumlah Anggota:  orang",
+                                            text = "Jumlah Anggota: ${kk.anggotaCount} orang",
                                             fontSize = 13.sp,
                                             color = Color.Gray
                                         )
@@ -290,7 +290,7 @@ fun KKListScreen(
                                         errorMessage = res.body()?.message ?: "Gagal menautkan KK"
                                     }
                                 } catch (e: Exception) {
-                                    errorMessage = "Gagal: "
+                                    errorMessage = "Gagal: ${e.message ?: "Gagal menautkan KK."}"
                                 } finally {
                                     isSubmittingKk = false
                                 }

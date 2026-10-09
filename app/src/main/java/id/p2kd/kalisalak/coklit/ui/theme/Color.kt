@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.theme
+﻿package id.p2kd.kalisalak.coklit.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -11,6 +11,9 @@ val Blue900 = Color(0xFF1E3A8A)
 val Blue800 = Color(0xFF1E40AF)
 val Blue600 = Color(0xFF2563EB)
 val Blue400 = Color(0xFF60A5FA)
+
+val Cyan400 = Color(0xFF22D3EE)
+val Cyan300 = Color(0xFF67E8F9)
 
 val Amber600 = Color(0xFFD97706)
 val Amber500 = Color(0xFFF59E0B)

@@ -34,7 +34,7 @@ object ApiClient {
 
     fun getService(sessionManager: EncryptedSessionManager): ApiService {
         val baseUrl = sessionManager.getServerUrl().trim().let {
-            if (it.endsWith("/")) it else "/"
+            if (it.endsWith("/")) it else "$it/"
         }
 
         if (retrofit == null || currentBaseUrl != baseUrl) {
@@ -49,7 +49,7 @@ object ApiClient {
                     .header("Content-Type", "application/json")
 
                 if (!token.isNullOrBlank()) {
-                    requestBuilder.header("Authorization", "Bearer ")
+                    requestBuilder.header("Authorization", "Bearer $token")
                 }
 
                 chain.proceed(requestBuilder.build())
@@ -77,3 +77,5 @@ object ApiClient {
         return retrofit!!.create(ApiService::class.java)
     }
 }
+
+

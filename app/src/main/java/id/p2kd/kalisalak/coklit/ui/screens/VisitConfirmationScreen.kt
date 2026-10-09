@@ -1,4 +1,4 @@
-﻿package id.p2kd.kalisalak.coklit.ui.screens
+package id.p2kd.kalisalak.coklit.ui.screens
 
 import android.content.Context
 import androidx.compose.foundation.background
@@ -101,9 +101,9 @@ fun VisitConfirmationScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Ringkasan Rumah", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Alamat: ")
-                            Text("RT  / RW  • Dusun: ")
-                            Text("Anggota Terverifikasi:  orang")
+                            Text("Alamat: ${rumah?.alamat ?: "-"}")
+                            Text("RT ${rumah?.rt ?: "-"} / RW ${rumah?.rw ?: "-"} • Dusun: ${rumah?.dusun ?: "-"}")
+                            Text("Anggota Terverifikasi: ${verifikasiList.size} orang")
                         }
                     }
 
@@ -165,8 +165,7 @@ fun VisitConfirmationScreen(
                         onClick = {
                             if (namaStikerManual.isBlank()) {
                                 errorMessage = "Harap masukkan nama penghuni yang dituliskan pada stiker"
-                                return@Button
-                            }
+                            } else {
                             isSubmitting = true
                             errorMessage = null
 
@@ -223,6 +222,7 @@ fun VisitConfirmationScreen(
                                 } finally {
                                     isSubmitting = false
                                 }
+                            }
                             }
                         },
                         modifier = Modifier

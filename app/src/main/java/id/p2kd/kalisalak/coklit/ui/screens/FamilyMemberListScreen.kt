@@ -58,7 +58,7 @@ fun FamilyMemberListScreen(
                     errorMessage = "Gagal memuat data anggota"
                 }
             } catch (e: Exception) {
-                errorMessage = "Gagal memuat: "
+                errorMessage = "Gagal memuat: ${e.message ?: "Periksa koneksi internet."}"
             } finally {
                 isLoading = false
             }
@@ -158,7 +158,7 @@ fun FamilyMemberListScreen(
                                             fontSize = 16.sp
                                         )
                                         Text(
-                                            text = "NIK: ",
+                                            text = "NIK: ${item.nik}",
                                             fontSize = 13.sp,
                                             color = Color.Gray
                                         )

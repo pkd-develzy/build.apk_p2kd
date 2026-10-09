@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
+import id.p2kd.kalisalak.coklit.data.local.OfflineQueueManager
 import id.p2kd.kalisalak.coklit.data.models.MemberVerificationPayload
 import id.p2kd.kalisalak.coklit.data.security.EncryptedSessionManager
 import id.p2kd.kalisalak.coklit.ui.screens.*
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 fun AppNavigation() {
     val context = LocalContext.current
     val sessionManager = remember { EncryptedSessionManager(context) }
+    val offlineQueue = remember { OfflineQueueManager(context) }
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
 
@@ -31,6 +33,7 @@ fun AppNavigation() {
     ) {
         composable("login") {
             LoginScreen(
+                sessionManager = sessionManager,
                 onLoginSuccess = {
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
@@ -41,25 +44,27 @@ fun AppNavigation() {
 
         composable("home") {
             HomeScreen(
+                sessionManager = sessionManager,
+                offlineQueue = offlineQueue,
                 onNavigateToScan = { navController.navigate("scan") },
                 onNavigateToTasks = { navController.navigate("tasks") },
                 onNavigateToSync = { navController.navigate("sync") },
-                onNavigateToProfile = { navController.navigate("profile") },
-                onSelectRumah = { rumahId -> navController.navigate("kk_list/") }
+                onNavigateToProfile = { navController.navigate("profile") }
             )
         }
 
         composable("tasks") {
             TaskListScreen(
                 onBack = { navController.popBackStack() },
-                onSelectRumah = { rumahId -> navController.navigate("kk_list/") },
+                onSelectRumah = { rumahId -> navController.navigate("kk_list/" + rumahId) },
                 onNavigateToScan = { navController.navigate("scan") }
             )
         }
 
         composable("scan") {
             CameraScanScreen(
-                onBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() },
+                onManualInputClick = { navController.navigate("tasks") },
                 onQrScanned = { rawToken ->
                     coroutineScope.launch {
                         try {
@@ -67,13 +72,13 @@ fun AppNavigation() {
                             if (res.isSuccessful && res.body()?.valid == true) {
                                 val lookup = res.body()!!
                                 if (lookup.rumah != null) {
-                                    navController.navigate("kk_list/") {
+                                    navController.navigate("kk_list/" + lookup.rumah.id) {
                                         popUpTo("scan") { inclusive = true }
                                     }
                                 } else {
                                     val qrId = lookup.qr?.id ?: ""
                                     val token = lookup.qr?.qrToken ?: rawToken
-                                    navController.navigate("house_form//") {
+                                    navController.navigate("house_form/" + qrId + "/" + token) {
                                         popUpTo("scan") { inclusive = true }
                                     }
                                 }
@@ -98,7 +103,7 @@ fun AppNavigation() {
                 qrToken = token,
                 onBack = { navController.popBackStack() },
                 onSuccess = { createdRumah ->
-                    navController.navigate("kk_list/") {
+                    navController.navigate("kk_list/" + createdRumah.id) {
                         popUpTo("house_form/{qrId}/{token}") { inclusive = true }
                     }
                 }
@@ -116,10 +121,10 @@ fun AppNavigation() {
                 rumahId = rumahId,
                 onBack = { navController.popBackStack() },
                 onSelectKk = { kkId, noKk ->
-                    navController.navigate("family_members///")
+                    navController.navigate("family_members/" + rumahId + "/" + kkId + "/" + noKk)
                 },
                 onProceedToVisitConfirmation = {
-                    navController.navigate("visit_confirm/")
+                    navController.navigate("visit_confirm/" + rumahId)
                 }
             )
         }

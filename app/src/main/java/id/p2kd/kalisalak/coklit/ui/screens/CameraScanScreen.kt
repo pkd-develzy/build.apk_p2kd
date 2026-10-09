@@ -1,4 +1,4 @@
-﻿package id.p2kd.kalisalak.coklit.ui.screens
+package id.p2kd.kalisalak.coklit.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -49,8 +49,9 @@ import java.util.concurrent.Executors
 @Composable
 fun CameraScanScreen(
     onQrScanned: (String) -> Unit,
-    onNavigateBack: () -> Unit,
-    onManualInputClick: () -> Unit
+    onNavigateBack: () -> Unit = {},
+    onManualInputClick: () -> Unit = {},
+    onBack: () -> Unit = onNavigateBack
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current

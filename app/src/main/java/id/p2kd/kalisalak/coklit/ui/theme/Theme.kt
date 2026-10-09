@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.theme
+﻿package id.p2kd.kalisalak.coklit.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -26,4 +26,11 @@ fun P2KDCoklitTheme(
         typography = Typography,
         content = content
     )
+}
+
+@Composable
+fun P2kdTheme(
+    content: @Composable () -> Unit
+) {
+    P2KDCoklitTheme(content)
 }

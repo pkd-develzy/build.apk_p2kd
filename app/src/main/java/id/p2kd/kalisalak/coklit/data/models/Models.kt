@@ -182,24 +182,13 @@ data class LinkKkResponse(
 
 // 5. Submit Visit Request
 data class MemberVerificationPayload(
-    @SerializedName("pemilihId") val pemilihId: String,
-    @SerializedName("status") val status: String,
+    @SerializedName("pemilihId") val pemilihId: String = "",
+    @SerializedName("status") val status: String = "BELUM_DITEMUI",
     @SerializedName("catatan") val catatan: String? = null,
     @SerializedName("perbaikanData") val perbaikanData: Map<String, Any>? = null
 ) {
-    constructor(
-        pemilih_id: String,
-        status: String,
-        catatan: String? = null,
-        perbaikan_data: Map<String, Any>? = null
-    ) : this(
-        pemilihId = pemilih_id,
-        status = status,
-        catatan = catatan,
-        perbaikanData = perbaikan_data
-    )
-
     val pemilih_id: String get() = pemilihId
+    val perbaikan_data: Map<String, Any>? get() = perbaikanData
 }
 
 data class SubmitVisitRequest(
@@ -210,20 +199,11 @@ data class SubmitVisitRequest(
     @SerializedName("verifikasiAnggota") val verifikasiAnggota: List<MemberVerificationPayload> = emptyList(),
     @SerializedName("idempotencyKey") val idempotencyKey: String? = null
 ) {
-    constructor(
-        nama_stiker_manual: String?,
-        stiker_ditempel: Boolean,
-        catatan: String?,
-        verifikasi_anggota: List<MemberVerificationPayload>,
-        idempotency_key: String
-    ) : this(
-        qrToken = "",
-        namaStikerManual = nama_stiker_manual,
-        catatanKunjungan = catatan,
-        stikerDitempel = stiker_ditempel,
-        verifikasiAnggota = verifikasi_anggota,
-        idempotencyKey = idempotency_key
-    )
+    val nama_stiker_manual: String? get() = namaStikerManual
+    val stiker_ditempel: Boolean get() = stikerDitempel
+    val verifikasi_anggota: List<MemberVerificationPayload> get() = verifikasiAnggota
+    val catatan: String? get() = catatanKunjungan
+    val idempotency_key: String? get() = idempotencyKey
 }
 
 typealias KunjunganCoklitRequest = SubmitVisitRequest
@@ -302,3 +282,4 @@ data class OfflineQueueItem(
 }
 
 typealias QueueItem = OfflineQueueItem
+

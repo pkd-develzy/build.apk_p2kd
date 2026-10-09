@@ -1,4 +1,4 @@
-﻿package id.p2kd.kalisalak.coklit.ui.screens
+package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -26,9 +26,11 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    sessionManager: EncryptedSessionManager,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    sessionManager: EncryptedSessionManager? = null
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val actualSessionManager = sessionManager ?: remember { ApiClient.getSessionManager(context) }
     val coroutineScope = rememberCoroutineScope()
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -37,7 +39,7 @@ fun LoginScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var showServerSettings by remember { mutableStateOf(false) }
-    var serverUrlInput by remember { mutableStateOf(sessionManager.getServerUrl()) }
+    var serverUrlInput by remember { mutableStateOf(actualSessionManager.getServerUrl()) }
 
     Box(
         modifier = Modifier
@@ -205,21 +207,19 @@ fun LoginScreen(
                         onClick = {
                             if (username.isBlank() || password.isBlank()) {
                                 errorMessage = "Username dan kata sandi wajib diisi."
-                                return@Button
-                            }
+                            } else {
+                                isLoading = true
+                                errorMessage = null
 
-                            isLoading = true
-                            errorMessage = null
-
-                            coroutineScope.launch {
+                                coroutineScope.launch {
                                 try {
-                                    val api = ApiClient.getService(sessionManager)
+                                    val api = ApiClient.getService(actualSessionManager)
                                     val response = api.login(LoginRequest(username.trim(), password))
 
                                     if (response.isSuccessful && response.body()?.success == true) {
                                         val body = response.body()!!
                                         if (body.token != null && body.user != null) {
-                                            sessionManager.saveSession(body.token, body.user)
+                                            actualSessionManager.saveSession(body.token, body.user)
                                             onLoginSuccess()
                                         } else {
                                             errorMessage = "Respon server tidak valid."
@@ -234,8 +234,9 @@ fun LoginScreen(
                                     isLoading = false
                                 }
                             }
+                            }
                         },
-                        disabled = isLoading,
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -296,7 +297,7 @@ fun LoginScreen(
                         )
                         Button(
                             onClick = {
-                                sessionManager.setServerUrl(serverUrlInput.trim())
+                                actualSessionManager.setServerUrl(serverUrlInput.trim())
                                 showServerSettings = false
                             },
                             modifier = Modifier.align(Alignment.End),
@@ -310,4 +311,6 @@ fun LoginScreen(
         }
     }
 }
+
+
 
