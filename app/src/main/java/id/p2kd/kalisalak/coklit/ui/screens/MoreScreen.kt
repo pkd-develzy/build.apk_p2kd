@@ -1,4 +1,4 @@
-﻿package id.p2kd.kalisalak.coklit.ui.screens
+package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,8 +36,6 @@ fun MoreScreen(
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
-    var showServerDialog by remember { mutableStateOf(false) }
-    var serverUrlInput by remember { mutableStateOf(sessionManager.getServerUrl()) }
     val queueCount = remember { offlineQueue.getQueue().size }
 
     Column(
@@ -86,7 +84,7 @@ fun MoreScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "@ â€¢ ",
+                        text = "@${user?.username ?: "petugas"}",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -98,7 +96,7 @@ fun MoreScreen(
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "Wilayah: TPS  â€¢ ",
+                            text = "Wilayah: ${user?.assignedRw ?: user?.assignedTps ?: "Kalisalak"}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -119,17 +117,10 @@ fun MoreScreen(
                 MoreMenuItem(
                     icon = Icons.Default.Sync,
                     title = "Riwayat Sinkronisasi & Offline",
-                    subtitle = " antrean tersimpan lokal",
+                    subtitle = "$queueCount antrean tersimpan lokal",
                     onClick = onNavigateToSync
                 )
-                Divider(color = MaterialTheme.colorScheme.surfaceVariant)
-                MoreMenuItem(
-                    icon = Icons.Default.Dns,
-                    title = "Pengaturan Server API",
-                    subtitle = sessionManager.getServerUrl(),
-                    onClick = { showServerDialog = true }
-                )
-                Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                 MoreMenuItem(
                     icon = Icons.Default.Gavel,
                     title = "Regulasi & Tahapan Pilkades",
@@ -165,7 +156,7 @@ fun MoreScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "P2KD Coklit Mobile v1.1.0 (Production Release)",
+                text = "P2KD Coklit Mobile v1.3.0 (Official Release)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.outline
@@ -211,41 +202,6 @@ fun MoreScreen(
         )
     }
 
-    // Dialog Pengaturan Server
-    if (showServerDialog) {
-        AlertDialog(
-            onDismissRequest = { showServerDialog = false },
-            title = { Text("Pengaturan URL Server") },
-            text = {
-                Column {
-                    Text("URL Endpoint API Backend P2KD:", fontSize = 13.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = serverUrlInput,
-                        onValueChange = { newVal: String -> serverUrlInput = newVal },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        sessionManager.setServerUrl(serverUrlInput.trim())
-                        showServerDialog = false
-                    }
-                ) {
-                    Text("Simpan")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showServerDialog = false }) {
-                    Text("Batal")
-                }
-            }
-        )
-    }
-
     // Dialog Regulasi & Tahapan
     if (showInfoDialog) {
         AlertDialog(
@@ -253,13 +209,13 @@ fun MoreScreen(
             title = { Text("Tahapan Pemilih Pilkades") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("1. DP4 â€” Data Awal Pemerintah", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("2. Bahan Coklit â€” Hasil Sinkronisasi Lapangan", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("3. DPS â€” Daftar Pemilih Sementara", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("4. DPS Tambahan â€” Usulan Warga Baru", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("5. DPSHP â€” Hasil Perbaikan", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("6. DPSHP Akhir â€” Finalisasi Pleno", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("7. DPT â€” Daftar Pemilih Tetap Resmi", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("1. DP4 - Data Awal Pemerintah", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("2. Bahan Coklit - Hasil Sinkronisasi Lapangan", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("3. DPS - Daftar Pemilih Sementara", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("4. DPS Tambahan - Usulan Warga Baru", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("5. DPSHP - Hasil Perbaikan", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("6. DPSHP Akhir - Finalisasi Pleno", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("7. DPT - Daftar Pemilih Tetap Resmi", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text("Prinsip Utama: 1 QR Code C6 = 1 Rumah Fisik = Banyak KK = Banyak Anggota Keluarga. Nama penghuni pada stiker fisik ditulis manual oleh petugas menggunakan pena.", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
                 }

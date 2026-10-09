@@ -66,10 +66,10 @@ class EncryptedSessionManager(context: Context) {
     }
 
     fun getServerUrl(): String {
-        return sharedPreferences.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+        return DEFAULT_SERVER_URL
     }
 
     fun setServerUrl(url: String) {
-        sharedPreferences.edit().putString(KEY_SERVER_URL, url).apply()
+        // Locked to official production domain
     }
 }

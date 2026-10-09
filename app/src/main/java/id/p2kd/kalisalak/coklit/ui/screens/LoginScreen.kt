@@ -54,8 +54,7 @@ fun LoginScreen(
     var isSendingOtp by remember { mutableStateOf(false) }
     var phoneAuthError by remember { mutableStateOf<String?>(null) }
 
-    var showServerSettings by remember { mutableStateOf(false) }
-    var serverUrlInput by remember { mutableStateOf(actualSessionManager.getServerUrl()) }
+
 
     Box(
         modifier = Modifier
@@ -338,48 +337,7 @@ fun LoginScreen(
                 }
             }
 
-            // Server Settings Toggle
-            Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = { showServerSettings = !showServerSettings }) {
-                Text(
-                    text = if (showServerSettings) "Sembunyikan Pengaturan Server" else "Pengaturan Server Backend",
-                    color = Slate400,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
 
-            if (showServerSettings) {
-                Surface(
-                    color = Navy900.copy(alpha = 0.7f),
-                    shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Navy700),
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Alamat Server Backend:", style = MaterialTheme.typography.labelSmall, color = Slate400)
-                        OutlinedTextField(
-                            value = serverUrlInput,
-                            onValueChange = { serverUrlInput = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = White,
-                                unfocusedTextColor = White
-                            )
-                        )
-                        Button(
-                            onClick = {
-                                actualSessionManager.setServerUrl(serverUrlInput.trim())
-                                showServerSettings = false
-                            },
-                            modifier = Modifier.align(Alignment.End),
-                            colors = ButtonDefaults.buttonColors(containerColor = Navy700)
-                        ) {
-                            Text("Simpan URL", color = White)
-                        }
-                    }
-                }
-            }
         }
     }
 

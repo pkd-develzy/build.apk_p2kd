@@ -243,17 +243,17 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatCard(
-                    title = "Total Rumah",
-                    count = summary.totalRumah,
-                    icon = Icons.Default.Home,
+                    title = "Pemilih Wilayah",
+                    count = summary.totalPemilihWilayah,
+                    icon = Icons.Default.Group,
                     accentColor = Blue400,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    title = "Selesai",
-                    count = summary.selesaiRumah,
-                    icon = Icons.Default.CheckCircle,
-                    accentColor = Emerald500,
+                    title = "Stiker Siap Pakai",
+                    count = summary.stikerTersedia,
+                    icon = Icons.Default.ConfirmationNumber,
+                    accentColor = Amber400,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -263,17 +263,17 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatCard(
-                    title = "Perlu Tindak Lanjut",
-                    count = summary.perluFollowUp,
-                    icon = Icons.Default.Warning,
-                    accentColor = Amber400,
+                    title = "Rumah Terdata",
+                    count = summary.totalRumah,
+                    icon = Icons.Default.Home,
+                    accentColor = Slate300,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    title = "Stiker Siap Pakai",
-                    count = summary.stikerTersedia,
-                    icon = Icons.Default.ConfirmationNumber,
-                    accentColor = Slate300,
+                    title = "Coklit Selesai",
+                    count = summary.selesaiRumah,
+                    icon = Icons.Default.CheckCircle,
+                    accentColor = Emerald500,
                     modifier = Modifier.weight(1f)
                 )
             }

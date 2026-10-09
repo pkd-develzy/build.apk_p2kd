@@ -1,4 +1,4 @@
-﻿package id.p2kd.kalisalak.coklit.ui.screens
+package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,8 +24,8 @@ import id.p2kd.kalisalak.coklit.data.models.VoterStageSummary
 import kotlinx.coroutines.launch
 
 enum class VoterGroup(val label: String, val stages: List<Pair<String, String>>) {
-    SUMBER("Sumber & Persiapan", listOf("DP4" to "DP4", "BAHAN_COKLIT" to "Bahan Coklit")),
-    PENDATAAN("Pendataan & Perbaikan", listOf("DPS" to "DPS", "DPS_TAMBAHAN" to "DPS Tambahan", "DPSHP" to "DPSHP")),
+    COKLIT("Data Coklit", listOf("CALON_DPS" to "Bahan Coklit", "SEMUA" to "Semua Tahap", "DP4" to "DP4")),
+    PENDATAAN("Pendataan", listOf("DPS" to "DPS", "DPS_TAMBAHAN" to "DPS Tambahan", "DPSHP" to "DPSHP")),
     FINALISASI("Finalisasi", listOf("DPSHP_AKHIR" to "DPSHP Akhir", "DPT" to "DPT"))
 }
 
@@ -35,8 +35,8 @@ fun VoterDataScreen(
     onVoterClick: (VoterItem) -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var selectedGroup by remember { mutableStateOf(VoterGroup.PENDATAAN) }
-    var selectedStageKey by remember { mutableStateOf("DPS") }
+    var selectedGroup by remember { mutableStateOf(VoterGroup.COKLIT) }
+    var selectedStageKey by remember { mutableStateOf("CALON_DPS") }
     var selectedStatus by remember { mutableStateOf("SEMUA") } // SEMUA | AKTIF | TMS
     var searchQuery by remember { mutableStateOf("") }
 
@@ -54,7 +54,7 @@ fun VoterDataScreen(
             errorMessage = null
             try {
                 val res = ApiClient.api.getVoters(
-                    tahap = selectedStageKey,
+                    tahap = if (selectedStageKey == "SEMUA") null else selectedStageKey,
                     status = if (selectedStatus == "SEMUA") null else selectedStatus,
                     search = if (searchQuery.isBlank()) null else searchQuery.trim(),
                     page = 1,
@@ -69,7 +69,7 @@ fun VoterDataScreen(
                     errorMessage = res.body()?.message ?: "Gagal memuat daftar pemilih."
                 }
             } catch (e: Exception) {
-                errorMessage = "Koneksi bermasalah: "
+                errorMessage = "Koneksi bermasalah: " + (e.localizedMessage ?: e.message ?: "Silakan coba lagi")
             } finally {
                 isLoading = false
             }
@@ -192,7 +192,7 @@ fun VoterDataScreen(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = " Jiwa",
+                    text = "$totalCount Jiwa",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -200,7 +200,7 @@ fun VoterDataScreen(
             }
         }
 
-        Divider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
 
         // 4. Content Area
         Box(modifier = Modifier.weight(1f)) {
@@ -293,8 +293,8 @@ fun VoterDataScreen(
 
                 DetailItemRow(label = "NIK (Masked)", value = maskNik(detail.nik))
                 DetailItemRow(label = "Jenis Kelamin", value = if (detail.jenisKelamin == "L") "Laki-laki" else "Perempuan")
-                DetailItemRow(label = "Usia", value = " Tahun")
-                DetailItemRow(label = "Wilayah", value = "RT  / RW  (TPS )")
+                DetailItemRow(label = "Usia", value = "${detail.usia ?: "-"} Tahun")
+                DetailItemRow(label = "Wilayah", value = "RT ${detail.rt} / RW ${detail.rw} (TPS ${detail.tps})")
                 DetailItemRow(label = "Alamat", value = detail.alamat ?: "-")
                 DetailItemRow(label = "Status Data", value = detail.status)
                 if (!detail.keterangan.isNullOrBlank()) {
@@ -365,13 +365,13 @@ fun VoterCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "NIK: ",
+                    text = "NIK: " + maskNik(voter.nik),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "RT /RW  â€¢ TPS ",
+                    text = "RT ${voter.rt} / RW ${voter.rw} - TPS ${voter.tps}",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -398,7 +398,7 @@ fun BadgeTahap(tahap: String) {
         "DPSHP_AKHIR", "DPSHP" -> Color(0xFFE3F2FD) to Color(0xFF1565C0)
         "DPS_TAMBAHAN" -> Color(0xFFFFF3E0) to Color(0xFFE65100)
         "DPS" -> Color(0xFFEDE7F6) to Color(0xFF512DA8)
-        "BAHAN_COKLIT" -> Color(0xFFE0F2F1) to Color(0xFF00695C)
+        "BAHAN_COKLIT", "CALON_DPS" -> Color(0xFFE0F2F1) to Color(0xFF00695C)
         else -> Color(0xFFECEFF1) to Color(0xFF37474F)
     }
 
@@ -409,7 +409,7 @@ fun BadgeTahap(tahap: String) {
             .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
         Text(
-            text = tahap.replace("_", " "),
+            text = if (tahap.uppercase() == "CALON_DPS") "BAHAN COKLIT" else tahap.replace("_", " "),
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             color = textColor

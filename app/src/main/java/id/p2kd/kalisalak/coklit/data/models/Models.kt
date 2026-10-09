@@ -220,7 +220,8 @@ data class TaskSummary(
     @SerializedName("totalRumah") val totalRumah: Int = 0,
     @SerializedName("selesaiRumah") val selesaiRumah: Int = 0,
     @SerializedName("perluFollowUp") val perluFollowUp: Int = 0,
-    @SerializedName("stikerTersedia") val stikerTersedia: Int = 0
+    @SerializedName("stikerTersedia") val stikerTersedia: Int = 0,
+    @SerializedName("totalPemilihWilayah") val totalPemilihWilayah: Int = 0
 )
 
 data class UnassignedQrItem(
