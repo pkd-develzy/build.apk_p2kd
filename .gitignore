@@ -11,3 +11,10 @@ captures/
 *.apk
 *.aab
 output-metadata.json
+
+# Keystore & Signing Secrets
+*.jks
+*.keystore
+*.p12
+*.key
+
