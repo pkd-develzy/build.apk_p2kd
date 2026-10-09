@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.screens
+﻿package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
-import id.p2kd.kalisalak.coklit.data.models.RumahData
+import id.p2kd.kalisalak.coklit.data.models.RumahItem
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,7 +31,7 @@ fun TaskListScreen(
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var taskList by remember { mutableStateOf<List<RumahData>>(emptyList()) }
+    var taskList by remember { mutableStateOf<List<RumahItem>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
 
     fun loadTasks() {
@@ -41,12 +41,12 @@ fun TaskListScreen(
             try {
                 val res = ApiClient.api.getTasks()
                 if (res.isSuccessful && res.body()?.success == true) {
-                    taskList = res.body()?.data ?: emptyList()
+                    taskList = res.body()?.rumahList ?: emptyList()
                 } else {
                     errorMessage = res.body()?.message ?: "Gagal memuat daftar tugas"
                 }
             } catch (e: Exception) {
-                errorMessage = "Gagal memuat: ${e.localizedMessage}"
+                errorMessage = "Gagal memuat: "
             } finally {
                 isLoading = false
             }
@@ -61,11 +61,10 @@ fun TaskListScreen(
         if (searchQuery.isBlank()) taskList
         else {
             taskList.filter {
-                (it.alamat_fisik?.contains(searchQuery, ignoreCase = true) == true) ||
-                (it.rt?.contains(searchQuery) == true) ||
-                (it.rw?.contains(searchQuery) == true) ||
-                (it.dusun?.contains(searchQuery, ignoreCase = true) == true) ||
-                (it.kartu_keluarga.any { kk -> kk.kepala_keluarga?.contains(searchQuery, ignoreCase = true) == true })
+                it.alamat.contains(searchQuery, ignoreCase = true) ||
+                it.rt.contains(searchQuery) ||
+                it.rw.contains(searchQuery) ||
+                it.qrToken.contains(searchQuery, ignoreCase = true)
             }
         }
     }
@@ -116,7 +115,7 @@ fun TaskListScreen(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Cari alamat, RT, nama kepala KK...") },
+                        placeholder = { Text("Cari alamat, RT, token QR...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -126,7 +125,7 @@ fun TaskListScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Total Rumah Terdata: ${filteredList.size}",
+                        text = "Total Rumah Terdata: ",
                         fontSize = 13.sp,
                         color = Color.Gray,
                         fontWeight = FontWeight.Medium
@@ -155,13 +154,13 @@ fun TaskListScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             items(filteredList) { house ->
-                                val statusBg = when (house.status_pendataan) {
+                                val statusBg = when (house.statusPendataan) {
                                     "COMPLETED" -> Color(0xFFE8F5E9)
                                     "VISITED" -> Color(0xFFE3F2FD)
                                     "FOLLOW_UP_REQUIRED" -> Color(0xFFFFEBEE)
                                     else -> Color(0xFFFFF3E0)
                                 }
-                                val statusText = when (house.status_pendataan) {
+                                val statusText = when (house.statusPendataan) {
                                     "COMPLETED" -> Color(0xFF2E7D32)
                                     "VISITED" -> Color(0xFF1565C0)
                                     "FOLLOW_UP_REQUIRED" -> Color(0xFFC62828)
@@ -188,17 +187,17 @@ fun TaskListScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = house.alamat_fisik ?: "Tanpa Alamat Fisik",
+                                                text = house.alamat.ifEmpty { "Tanpa Alamat Fisik" },
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 15.sp
                                             )
                                             Text(
-                                                text = "RT ${house.rt ?: "-"} / RW ${house.rw ?: "-"} • Dusun: ${house.dusun ?: "-"}",
+                                                text = "RT  / RW  • TPS: ",
                                                 fontSize = 13.sp,
                                                 color = Color.DarkGray
                                             )
                                             Text(
-                                                text = "KK: ${house.kartu_keluarga.size} keluarga • Token: ${house.qr_rumah?.token ?: "-"}",
+                                                text = "Token QR: ",
                                                 fontSize = 12.sp,
                                                 color = Color.Gray
                                             )
@@ -208,7 +207,7 @@ fun TaskListScreen(
                                             shape = RoundedCornerShape(12.dp)
                                         ) {
                                             Text(
-                                                text = house.status_pendataan,
+                                                text = house.statusPendataan,
                                                 color = statusText,
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 11.sp,

@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.screens
+﻿package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,9 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
-import id.p2kd.kalisalak.coklit.data.models.KartuKeluargaData
+import id.p2kd.kalisalak.coklit.data.models.KartuKeluargaItem
 import id.p2kd.kalisalak.coklit.data.models.LinkKkRequest
-import id.p2kd.kalisalak.coklit.data.models.RumahData
+import id.p2kd.kalisalak.coklit.data.models.RumahItem
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,13 +35,11 @@ fun KKListScreen(
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var rumah by remember { mutableStateOf<RumahData?>(null) }
+    var rumah by remember { mutableStateOf<RumahItem?>(null) }
     var showAddKkDialog by remember { mutableStateOf(false) }
 
-    // Dialog state
     var inputNoKk by remember { mutableStateOf("") }
     var inputKepalaKeluarga by remember { mutableStateOf("") }
-    var inputAlamatKk by remember { mutableStateOf("") }
     var isSubmittingKk by remember { mutableStateOf(false) }
 
     fun refreshData() {
@@ -49,11 +47,9 @@ fun KKListScreen(
         errorMessage = null
         coroutineScope.launch {
             try {
-                // Fetch latest rumah details through lookup or dedicated endpoint
-                // If lookup by ID isn't directly exposed, task list or house lookup can serve
                 val res = ApiClient.api.getTasks()
                 if (res.isSuccessful && res.body()?.success == true) {
-                    val found = res.body()?.data?.find { it.id == rumahId }
+                    val found = res.body()?.rumahList?.find { it.id == rumahId }
                     if (found != null) {
                         rumah = found
                     } else {
@@ -63,7 +59,7 @@ fun KKListScreen(
                     errorMessage = res.body()?.message ?: "Gagal memuat data keluarga"
                 }
             } catch (e: Exception) {
-                errorMessage = "Koneksi bermasalah: ${e.localizedMessage}"
+                errorMessage = "Koneksi bermasalah: "
             } finally {
                 isLoading = false
             }
@@ -162,18 +158,18 @@ fun KKListScreen(
                                     Icon(Icons.Default.Home, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = rumah?.alamat_fisik ?: "Alamat Rumah",
+                                        text = rumah?.alamat ?: "Alamat Rumah",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "RT ${rumah?.rt ?: "-"} / RW ${rumah?.rw ?: "-"} • Dusun: ${rumah?.dusun ?: "-"}",
+                                    text = "RT  / RW  • Dusun: ",
                                     fontSize = 14.sp
                                 )
                                 Text(
-                                    text = "Total KK Terdaftar: ${rumah?.kartu_keluarga?.size ?: 0} KK",
+                                    text = "Total KK Terdaftar:  KK",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.primary
@@ -182,7 +178,7 @@ fun KKListScreen(
                         }
                     }
 
-                    val kks = rumah?.kartu_keluarga ?: emptyList()
+                    val kks = rumah?.kartuKeluarga ?: emptyList()
                     if (kks.isEmpty()) {
                         item {
                             Box(
@@ -201,7 +197,7 @@ fun KKListScreen(
                     } else {
                         items(kks) { kk ->
                             Card(
-                                onClick = { onSelectKk(kk.id, kk.no_kk) },
+                                onClick = { onSelectKk(kk.id, kk.noKk) },
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -220,16 +216,16 @@ fun KKListScreen(
                                     Spacer(modifier = Modifier.width(16.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "No. KK: ${kk.no_kk}",
+                                            text = "No. KK: ",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 15.sp
                                         )
                                         Text(
-                                            text = "Kepala Keluarga: ${kk.kepala_keluarga ?: "Belum ditentukan"}",
+                                            text = "Kepala Keluarga: ",
                                             fontSize = 14.sp
                                         )
                                         Text(
-                                            text = "Jumlah Anggota: ${kk.anggota_count} orang",
+                                            text = "Jumlah Anggota:  orang",
                                             fontSize = 13.sp,
                                             color = Color.Gray
                                         )
@@ -281,8 +277,8 @@ fun KKListScreen(
                             coroutineScope.launch {
                                 try {
                                     val req = LinkKkRequest(
-                                        no_kk = inputNoKk.trim(),
-                                        kepala_keluarga = inputKepalaKeluarga.trim().ifEmpty { null }
+                                        noKk = inputNoKk.trim(),
+                                        kepalaKeluargaNama = inputKepalaKeluarga.trim().ifEmpty { null }
                                     )
                                     val res = ApiClient.api.linkKk(rumahId, req)
                                     if (res.isSuccessful && res.body()?.success == true) {
@@ -294,7 +290,7 @@ fun KKListScreen(
                                         errorMessage = res.body()?.message ?: "Gagal menautkan KK"
                                     }
                                 } catch (e: Exception) {
-                                    errorMessage = "Gagal: ${e.localizedMessage}"
+                                    errorMessage = "Gagal: "
                                 } finally {
                                     isSubmittingKk = false
                                 }

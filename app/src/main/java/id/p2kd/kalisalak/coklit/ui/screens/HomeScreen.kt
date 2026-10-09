@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.screens
+﻿package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -144,7 +144,7 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Kalisalak • ${userProfile?.assignedRw ?: "Semua RW"}",
+                            text = "Kalisalak â€¢ ${userProfile?.assignedRw ?: "Semua RW"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Slate400
                         )
@@ -416,3 +416,4 @@ fun ActionMenuCard(
         }
     }
 }
+

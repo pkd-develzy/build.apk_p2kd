@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.data.api
+﻿package id.p2kd.kalisalak.coklit.data.api
 
 import id.p2kd.kalisalak.coklit.data.models.*
 import retrofit2.Response
@@ -47,6 +47,6 @@ interface ApiService {
 
     @POST("api/app/sync")
     suspend fun syncBatch(
-        @Body payload: Map<String, Any>
-    ): Response<Map<String, Any>>
+        @Body payload: BatchSyncRequest
+    ): Response<BatchSyncResponse>
 }

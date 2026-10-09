@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.screens
+﻿package id.p2kd.kalisalak.coklit.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -238,7 +238,7 @@ fun CameraScanScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = onNavigateBack,
+                onClick = onBack,
                 modifier = Modifier
                     .size(44.dp)
                     .background(Navy900.copy(alpha = 0.85f), CircleShape)
@@ -254,7 +254,7 @@ fun CameraScanScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Kamera Belakang • P2KD Kalisalak",
+                    text = "Kamera Belakang â€¢ P2KD Kalisalak",
                     style = MaterialTheme.typography.labelSmall,
                     color = Blue400
                 )
@@ -346,3 +346,4 @@ fun CameraScanScreen(
         }
     }
 }
+

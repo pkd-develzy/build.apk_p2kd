@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.data.security
+﻿package id.p2kd.kalisalak.coklit.data.security
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -41,6 +41,8 @@ class EncryptedSessionManager(context: Context) {
         return sharedPreferences.getString(KEY_AUTH_TOKEN, null)
     }
 
+    fun getToken(): String? = getAuthToken()
+
     fun getUserProfile(): UserProfile? {
         val json = sharedPreferences.getString(KEY_USER_PROFILE, null) ?: return null
         return try {
@@ -49,6 +51,8 @@ class EncryptedSessionManager(context: Context) {
             null
         }
     }
+
+    fun getUser(): UserProfile? = getUserProfile()
 
     fun isLoggedIn(): Boolean {
         return !getAuthToken().isNullOrBlank() && getUserProfile() != null

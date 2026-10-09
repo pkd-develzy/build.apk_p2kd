@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.screens
+﻿package id.p2kd.kalisalak.coklit.ui.screens
 
 import android.content.Context
 import androidx.compose.foundation.background
@@ -21,9 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
 import id.p2kd.kalisalak.coklit.data.local.OfflineQueueManager
-import id.p2kd.kalisalak.coklit.data.models.KunjunganCoklitRequest
-import id.p2kd.kalisalak.coklit.data.models.MemberVerificationPayload
-import id.p2kd.kalisalak.coklit.data.models.RumahData
+import id.p2kd.kalisalak.coklit.data.models.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -40,7 +38,7 @@ fun VisitConfirmationScreen(
     val scrollState = rememberScrollState()
 
     var isLoading by remember { mutableStateOf(true) }
-    var rumah by remember { mutableStateOf<RumahData?>(null) }
+    var rumah by remember { mutableStateOf<RumahItem?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -54,7 +52,7 @@ fun VisitConfirmationScreen(
             try {
                 val res = ApiClient.api.getTasks()
                 if (res.isSuccessful && res.body()?.success == true) {
-                    rumah = res.body()?.data?.find { it.id == rumahId }
+                    rumah = res.body()?.rumahList?.find { it.id == rumahId }
                 }
             } catch (e: Exception) {
                 // If offline, can still proceed
@@ -103,10 +101,9 @@ fun VisitConfirmationScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Ringkasan Rumah", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Alamat: ${rumah?.alamat_fisik ?: "ID: $rumahId"}")
-                            Text("RT ${rumah?.rt ?: "-"} / RW ${rumah?.rw ?: "-"} • Dusun: ${rumah?.dusun ?: "-"}")
-                            Text("Total KK Terkait: ${rumah?.kartu_keluarga?.size ?: 0} KK")
-                            Text("Anggota Terverifikasi: ${verifikasiList.size} orang")
+                            Text("Alamat: ")
+                            Text("RT  / RW  • Dusun: ")
+                            Text("Anggota Terverifikasi:  orang")
                         }
                     }
 
@@ -173,30 +170,56 @@ fun VisitConfirmationScreen(
                             isSubmitting = true
                             errorMessage = null
 
-                            val payload = KunjunganCoklitRequest(
-                                nama_stiker_manual = namaStikerManual.trim(),
-                                stiker_ditempel = stikerDitempel,
-                                catatan = catatanPetugas.trim().ifEmpty { null },
-                                verifikasi_anggota = verifikasiList,
-                                idempotency_key = UUID.randomUUID().toString()
+                            val payload = SubmitVisitRequest(
+                                qrToken = rumah?.qrToken ?: "",
+                                namaStikerManual = namaStikerManual.trim(),
+                                catatanKunjungan = catatanPetugas.trim().ifEmpty { null },
+                                stikerDitempel = stikerDitempel,
+                                verifikasiAnggota = verifikasiList,
+                                idempotencyKey = UUID.randomUUID().toString()
                             )
 
                             coroutineScope.launch {
                                 try {
-                                    val res = ApiClient.api.submitKunjungan(rumahId, payload)
+                                    val res = ApiClient.api.submitVisit(rumahId, payload)
                                     if (res.isSuccessful && res.body()?.success == true) {
                                         onSuccess(false) // Direct online success
                                     } else {
                                         // Save to offline queue if server error
-                                        val offlineMgr = OfflineQueueManager(context)
-                                        offlineMgr.enqueue(rumahId, payload)
-                                        onSuccess(true) // Saved offline
+                                        val offlineItem = OfflineQueueItem(
+                                            localId = UUID.randomUUID().toString(),
+                                            idempotencyKey = payload.idempotencyKey ?: UUID.randomUUID().toString(),
+                                            qrToken = rumah?.qrToken ?: "",
+                                            rumahData = RumahRequest(
+                                                qrToken = rumah?.qrToken ?: "",
+                                                alamat = rumah?.alamat ?: "",
+                                                rt = rumah?.rt ?: "01",
+                                                rw = rumah?.rw ?: "01"
+                                            ),
+                                            kks = emptyList(),
+                                            visitData = payload,
+                                            syncState = SyncState.SAVED_LOCAL
+                                        )
+                                        OfflineQueueManager(context).enqueue(offlineItem)
+                                        onSuccess(true)
                                     }
                                 } catch (e: Exception) {
-                                    // Network issue -> save to offline queue safely
-                                    val offlineMgr = OfflineQueueManager(context)
-                                    offlineMgr.enqueue(rumahId, payload)
-                                    onSuccess(true) // Saved offline
+                                    val offlineItem = OfflineQueueItem(
+                                        localId = UUID.randomUUID().toString(),
+                                        idempotencyKey = payload.idempotencyKey ?: UUID.randomUUID().toString(),
+                                        qrToken = rumah?.qrToken ?: "",
+                                        rumahData = RumahRequest(
+                                            qrToken = rumah?.qrToken ?: "",
+                                            alamat = rumah?.alamat ?: "",
+                                            rt = rumah?.rt ?: "01",
+                                            rw = rumah?.rw ?: "01"
+                                        ),
+                                        kks = emptyList(),
+                                        visitData = payload,
+                                        syncState = SyncState.SAVED_LOCAL
+                                    )
+                                    OfflineQueueManager(context).enqueue(offlineItem)
+                                    onSuccess(true)
                                 } finally {
                                     isSubmitting = false
                                 }

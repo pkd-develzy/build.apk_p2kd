@@ -1,14 +1,14 @@
-package id.p2kd.kalisalak.coklit.data.local
+﻿package id.p2kd.kalisalak.coklit.data.local
 
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import id.p2kd.kalisalak.coklit.data.api.ApiService
-import id.p2kd.kalisalak.coklit.data.models.OfflineQueueItem
-import id.p2kd.kalisalak.coklit.data.models.SyncState
+import id.p2kd.kalisalak.coklit.data.models.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.UUID
 
 class OfflineQueueManager(context: Context) {
 
@@ -43,12 +43,42 @@ class OfflineQueueManager(context: Context) {
         prefs.edit().putString(keyQueue, gson.toJson(items)).apply()
     }
 
+    fun getQueue(): List<OfflineQueueItem> {
+        return _itemsFlow.value
+    }
+
     fun enqueue(item: OfflineQueueItem) {
         val current = _itemsFlow.value.toMutableList()
-        // Deduplicate by idempotency key
         current.removeAll { it.idempotencyKey == item.idempotencyKey }
         current.add(0, item)
         saveItems(current)
+    }
+
+    fun enqueue(rumahId: String, payload: SubmitVisitRequest) {
+        val item = OfflineQueueItem(
+            localId = rumahId,
+            idempotencyKey = payload.idempotencyKey ?: UUID.randomUUID().toString(),
+            qrToken = payload.qrToken,
+            rumahData = RumahRequest(
+                qrToken = payload.qrToken,
+                alamat = "Offline Record",
+                rt = "01",
+                rw = "01"
+            ),
+            kks = emptyList(),
+            visitData = payload,
+            syncState = SyncState.PENDING_SYNC
+        )
+        enqueue(item)
+    }
+
+    fun updateStatus(id: String, statusStr: String, errorMsg: String? = null) {
+        val syncState = try {
+            SyncState.valueOf(statusStr)
+        } catch (_: Exception) {
+            SyncState.ERROR
+        }
+        updateState(id, syncState, errorMsg)
     }
 
     fun updateState(localId: String, newState: SyncState, errorMsg: String? = null) {
@@ -84,28 +114,25 @@ class OfflineQueueManager(context: Context) {
         for (item in pending) {
             updateState(item.localId, SyncState.SYNCING)
             try {
-                // 1. Daftarkan / perbarui rumah
                 val rumahRes = apiService.registerRumah(item.rumahData)
                 if (!rumahRes.isSuccessful || rumahRes.body()?.success != true) {
-                    val errMsg = rumahRes.body()?.message ?: "Gagal sinkronisasi data rumah (${rumahRes.code()})"
+                    val errMsg = rumahRes.body()?.message ?: "Gagal sinkronisasi data rumah ()"
                     updateState(item.localId, SyncState.ERROR, errMsg)
                     continue
                 }
 
                 val rumahId = rumahRes.body()!!.rumah?.id ?: item.localId
 
-                // 2. Hubungkan KK
                 for (kkReq in item.kks) {
                     apiService.linkKk(rumahId, kkReq)
                 }
 
-                // 3. Simpan Kunjungan & Verifikasi Anggota
                 val visitRes = apiService.submitVisit(rumahId, item.visitData)
                 if (visitRes.isSuccessful && visitRes.body()?.success == true) {
                     updateState(item.localId, SyncState.SYNCED)
                     successCount++
                 } else {
-                    val errMsg = visitRes.body()?.message ?: "Gagal sinkronisasi kunjungan (${visitRes.code()})"
+                    val errMsg = visitRes.body()?.message ?: "Gagal sinkronisasi kunjungan ()"
                     updateState(item.localId, SyncState.ERROR, errMsg)
                 }
             } catch (e: Exception) {

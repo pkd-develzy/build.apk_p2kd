@@ -1,4 +1,4 @@
-package id.p2kd.kalisalak.coklit.ui.screens
+﻿package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
-import id.p2kd.kalisalak.coklit.data.models.AnggotaKeluargaData
+import id.p2kd.kalisalak.coklit.data.models.AnggotaKeluargaItem
 import id.p2kd.kalisalak.coklit.data.models.MemberVerificationPayload
 import kotlinx.coroutines.launch
 
@@ -35,14 +33,12 @@ fun FamilyMemberListScreen(
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var members by remember { mutableStateOf<List<AnggotaKeluargaData>>(emptyList()) }
+    var members by remember { mutableStateOf<List<AnggotaKeluargaItem>>(emptyList()) }
 
-    // Dialog state for editing verification of an individual
-    var selectedMember by remember { mutableStateOf<AnggotaKeluargaData?>(null) }
+    var selectedMember by remember { mutableStateOf<AnggotaKeluargaItem?>(null) }
     var editStatus by remember { mutableStateOf("SESUAI") }
     var editCatatan by remember { mutableStateOf("") }
     var editNama by remember { mutableStateOf("") }
-    var editTps by remember { mutableStateOf("") }
 
     fun refreshMembers() {
         isLoading = true
@@ -51,8 +47,8 @@ fun FamilyMemberListScreen(
             try {
                 val res = ApiClient.api.getTasks()
                 if (res.isSuccessful && res.body()?.success == true) {
-                    val house = res.body()?.data?.find { it.id == rumahId }
-                    val kk = house?.kartu_keluarga?.find { it.id == kkId }
+                    val house = res.body()?.rumahList?.find { it.id == rumahId }
+                    val kk = house?.kartuKeluarga?.find { it.id == kkId }
                     if (kk != null) {
                         members = kk.anggota
                     } else {
@@ -62,7 +58,7 @@ fun FamilyMemberListScreen(
                     errorMessage = "Gagal memuat data anggota"
                 }
             } catch (e: Exception) {
-                errorMessage = "Gagal memuat: ${e.localizedMessage}"
+                errorMessage = "Gagal memuat: "
             } finally {
                 isLoading = false
             }
@@ -78,7 +74,7 @@ fun FamilyMemberListScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Anggota KK: $noKk", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Text("Anggota KK: ", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                         Text(
                             "Verifikasi Per-Individu Sesuai Kondisi Riil",
                             fontSize = 12.sp,
@@ -138,7 +134,7 @@ fun FamilyMemberListScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(members) { item ->
-                        val statusColor = when (item.verifikasi_status) {
+                        val statusColor = when (item.verifikasiStatus) {
                             "SESUAI" -> Color(0xFF2E7D32)
                             "UBAH_DATA" -> Color(0xFFE65100)
                             "TMS" -> Color(0xFFC62828)
@@ -157,21 +153,21 @@ fun FamilyMemberListScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = item.nama,
+                                            text = item.namaLengkap,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 16.sp
                                         )
                                         Text(
-                                            text = "NIK: ${item.nik}",
+                                            text = "NIK: ",
                                             fontSize = 13.sp,
                                             color = Color.Gray
                                         )
                                         Text(
-                                            text = "Kelamin: ${item.jenis_kelamin ?: "-"} • Usia: ${item.usia ?: "-"} thn",
+                                            text = "Kelamin:  • Usia:  thn",
                                             fontSize = 13.sp
                                         )
                                         Text(
-                                            text = "TPS: ${item.tps ?: "-"} • Status: ${item.status_kependudukan ?: "DPS"}",
+                                            text = "TPS:  • Status: ",
                                             fontSize = 13.sp
                                         )
                                     }
@@ -181,7 +177,7 @@ fun FamilyMemberListScreen(
                                         border = androidx.compose.foundation.BorderStroke(1.dp, statusColor)
                                     ) {
                                         Text(
-                                            text = item.verifikasi_status ?: "BELUM_DITEMUI",
+                                            text = item.verifikasiStatus ?: "BELUM_DITEMUI",
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
@@ -190,10 +186,10 @@ fun FamilyMemberListScreen(
                                     }
                                 }
 
-                                if (!item.verifikasi_catatan.isNullOrBlank()) {
+                                if (!item.verifikasiCatatan.isNullOrBlank()) {
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = "Catatan: ${item.verifikasi_catatan}",
+                                        text = "Catatan: ",
                                         fontSize = 12.sp,
                                         color = Color.DarkGray
                                     )
@@ -207,10 +203,9 @@ fun FamilyMemberListScreen(
                                     OutlinedButton(
                                         onClick = {
                                             selectedMember = item
-                                            editStatus = item.verifikasi_status ?: "SESUAI"
-                                            editCatatan = item.verifikasi_catatan ?: ""
-                                            editNama = item.nama
-                                            editTps = item.tps ?: ""
+                                            editStatus = item.verifikasiStatus ?: "SESUAI"
+                                            editCatatan = item.verifikasiCatatan ?: ""
+                                            editNama = item.namaLengkap
                                         },
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
@@ -231,7 +226,7 @@ fun FamilyMemberListScreen(
         val currentTarget = selectedMember!!
         AlertDialog(
             onDismissRequest = { selectedMember = null },
-            title = { Text("Verifikasi: ${currentTarget.nama}") },
+            title = { Text("Verifikasi: ") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Pilih Hasil Verifikasi di Lapangan:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
@@ -278,23 +273,21 @@ fun FamilyMemberListScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        // Update in local state
                         members = members.map { m ->
                             if (m.id == currentTarget.id) {
                                 m.copy(
-                                    verifikasi_status = editStatus,
-                                    verifikasi_catatan = editCatatan.ifEmpty { null }
+                                    verifikasiStatus = editStatus,
+                                    verifikasiCatatan = editCatatan.ifEmpty { null }
                                 )
                             } else m
                         }
 
-                        // Prepare payload list for parent/sync
                         val payloadList = members.map { m ->
                             MemberVerificationPayload(
-                                pemilih_id = m.id,
-                                status = m.verifikasi_status ?: "BELUM_DITEMUI",
-                                catatan = m.verifikasi_catatan,
-                                perbaikan_data = if (m.verifikasi_status == "UBAH_DATA") {
+                                pemilihId = m.id,
+                                status = m.verifikasiStatus ?: "BELUM_DITEMUI",
+                                catatan = m.verifikasiCatatan,
+                                perbaikanData = if (m.verifikasiStatus == "UBAH_DATA") {
                                     mapOf("nama" to editNama)
                                 } else null
                             )

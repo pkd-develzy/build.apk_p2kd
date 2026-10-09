@@ -1,5 +1,6 @@
-package id.p2kd.kalisalak.coklit.data.api
+﻿package id.p2kd.kalisalak.coklit.data.api
 
+import android.content.Context
 import id.p2kd.kalisalak.coklit.data.security.EncryptedSessionManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -12,10 +13,28 @@ object ApiClient {
 
     private var retrofit: Retrofit? = null
     private var currentBaseUrl: String? = null
+    private var internalSessionManager: EncryptedSessionManager? = null
+
+    fun initialize(context: Context) {
+        internalSessionManager = EncryptedSessionManager(context)
+    }
+
+    fun getSessionManager(context: Context): EncryptedSessionManager {
+        if (internalSessionManager == null) {
+            internalSessionManager = EncryptedSessionManager(context)
+        }
+        return internalSessionManager!!
+    }
+
+    val api: ApiService
+        get() {
+            checkNotNull(internalSessionManager) { "ApiClient must be initialized with context in Application class" }
+            return getService(internalSessionManager!!)
+        }
 
     fun getService(sessionManager: EncryptedSessionManager): ApiService {
         val baseUrl = sessionManager.getServerUrl().trim().let {
-            if (it.endsWith("/")) it else "$it/"
+            if (it.endsWith("/")) it else "/"
         }
 
         if (retrofit == null || currentBaseUrl != baseUrl) {
@@ -30,7 +49,7 @@ object ApiClient {
                     .header("Content-Type", "application/json")
 
                 if (!token.isNullOrBlank()) {
-                    requestBuilder.header("Authorization", "Bearer $token")
+                    requestBuilder.header("Authorization", "Bearer ")
                 }
 
                 chain.proceed(requestBuilder.build())
