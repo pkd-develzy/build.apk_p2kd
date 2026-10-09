@@ -174,7 +174,7 @@ jobs:
 
           ### Verifikasi Integritas Checksum
           * **File APK**: \`app-release.apk\`
-          * **SHA-256**: \`${{ env.RELEASE_SHA256 }}\`
+          * **SHA-256**: \`$RELEASE_SHA256\`
           EOF
 
           if gh release view "$TAG" >/dev/null 2>&1; then
