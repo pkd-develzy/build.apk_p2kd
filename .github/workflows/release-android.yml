@@ -11,7 +11,7 @@ on:
       tag_name:
         description: 'Tag name for GitHub Release (e.g. v1.0.0)'
         required: false
-        default: 'v1.0.0'
+        default: 'v1.1.0'
 
 permissions:
   contents: write
@@ -149,7 +149,7 @@ jobs:
           fi
 
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then
-            TAG="v1.0.0"
+            TAG="v1.1.0"
           fi
 
           echo "Mempublikasikan GitHub Release untuk tag: $TAG"
@@ -179,14 +179,14 @@ jobs:
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG sudah ada, memperbarui file dan rilis..."
-            gh release edit "$TAG" --title "P2KD Coklit v1.0.0 (Production Release)" --notes-file release_notes.md
+            gh release edit "$TAG" --title "P2KD Coklit $TAG (Production Release)" --notes-file release_notes.md
             gh release upload "$TAG" app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/app-release.apk.sha256 --clobber
           else
             echo "Membuat GitHub Release baru untuk tag $TAG..."
             gh release create "$TAG" \
               app/build/outputs/apk/release/app-release.apk \
               app/build/outputs/apk/release/app-release.apk.sha256 \
-              --title "P2KD Coklit v1.0.0 (Production Release)" \
+              --title "P2KD Coklit $TAG (Production Release)" \
               --notes-file release_notes.md
           fi
 

@@ -283,3 +283,96 @@ data class OfflineQueueItem(
 
 typealias QueueItem = OfflineQueueItem
 
+
+// 9. Voter Module Models (7 Stages)
+data class VoterItem(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("nik") val nik: String = "",
+    @SerializedName("nama") val nama: String = "",
+    @SerializedName("jenisKelamin") val jenisKelamin: String? = "L",
+    @SerializedName("usia") val usia: Int? = 0,
+    @SerializedName("alamat") val alamat: String? = "",
+    @SerializedName("rt") val rt: String? = "",
+    @SerializedName("rw") val rw: String? = "",
+    @SerializedName("tps") val tps: String? = "",
+    @SerializedName("tahap") val tahap: String = "DPS",
+    @SerializedName("status") val status: String = "AKTIF",
+    @SerializedName("keterangan") val keterangan: String? = null,
+    @SerializedName("updatedAt") val updatedAt: String? = null
+)
+
+data class VoterStageSummary(
+    @SerializedName("totalDps") val totalDps: Int = 0,
+    @SerializedName("totalDpt") val totalDpt: Int = 0,
+    @SerializedName("totalDp4") val totalDp4: Int = 0,
+    @SerializedName("totalBahanCoklit") val totalBahanCoklit: Int = 0,
+    @SerializedName("totalDpsHp") val totalDpsHp: Int = 0,
+    @SerializedName("totalDpsHpAkhir") val totalDpsHpAkhir: Int = 0,
+    @SerializedName("totalDpsTambahan") val totalDpsTambahan: Int = 0
+)
+
+data class VoterListResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("tahap") val tahap: String = "SEMUA",
+    @SerializedName("total") val total: Int = 0,
+    @SerializedName("page") val page: Int = 1,
+    @SerializedName("limit") val limit: Int = 50,
+    @SerializedName("totalPages") val totalPages: Int = 1,
+    @SerializedName("summary") val summary: VoterStageSummary = VoterStageSummary(),
+    @SerializedName("data") val data: List<VoterItem> = emptyList(),
+    @SerializedName("message") val message: String? = null
+)
+
+// 10. Unified Activities Hub Models
+data class ActivityItem(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("kategori") val kategori: String = "KUNJUNGAN",
+    @SerializedName("judul") val judul: String = "",
+    @SerializedName("deskripsi") val deskripsi: String = "",
+    @SerializedName("status") val status: String = "SELESAI",
+    @SerializedName("waktu") val waktu: String = "",
+    @SerializedName("aktor") val aktor: String = "",
+    @SerializedName("tps") val tps: String? = null,
+    @SerializedName("qrToken") val qrToken: String? = null,
+    @SerializedName("metadata") val metadata: Map<String, Any>? = null
+)
+
+data class ActivitiesSummary(
+    @SerializedName("totalAktivitas") val totalAktivitas: Int = 0,
+    @SerializedName("totalAduan") val totalAduan: Int = 0,
+    @SerializedName("totalPengumuman") val totalPengumuman: Int = 0,
+    @SerializedName("tasks") val tasks: TaskSummary? = null
+)
+
+data class ActivitiesResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("category") val category: String = "SEMUA",
+    @SerializedName("summary") val summary: ActivitiesSummary = ActivitiesSummary(),
+    @SerializedName("data") val data: List<ActivityItem> = emptyList(),
+    @SerializedName("message") val message: String? = null
+)
+
+// 11. Notification Center Models
+data class NotificationItem(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("title") val title: String = "",
+    @SerializedName("body") val body: String = "",
+    @SerializedName("category") val category: String = "SISTEM",
+    @SerializedName("timestamp") val timestamp: String = "",
+    @SerializedName("read") val read: Boolean = false,
+    @SerializedName("deepLink") val deepLink: String? = null
+)
+
+data class NotificationsResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("unreadCount") val unreadCount: Int = 0,
+    @SerializedName("totalCount") val totalCount: Int = 0,
+    @SerializedName("notifications") val notifications: List<NotificationItem> = emptyList(),
+    @SerializedName("message") val message: String? = null
+)
+
+// 12. FCM Device Token Models
+data class DeviceTokenRequest(
+    @SerializedName("token") val token: String,
+    @SerializedName("deviceModel") val deviceModel: String? = null
+)
