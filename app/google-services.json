@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "675866892912",
+    "project_id": "p2kd-2025",
+    "storage_bucket": "p2kd-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:675866892912:android:c80eab395f3d75c825f2b5",
+        "android_client_info": {
+          "package_name": "id.p2kd.kalisalak.coklit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBCnTEG1jh2UkZhKZ2TfK0i_3RdhfkgOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

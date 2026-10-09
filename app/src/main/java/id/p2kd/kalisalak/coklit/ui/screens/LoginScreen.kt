@@ -1,5 +1,6 @@
-package id.p2kd.kalisalak.coklit.ui.screens
+﻿package id.p2kd.kalisalak.coklit.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,14 +13,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.FirebaseException
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthProvider
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
+import id.p2kd.kalisalak.coklit.data.firebase.FirebaseAuthHelper
 import id.p2kd.kalisalak.coklit.data.models.LoginRequest
+import id.p2kd.kalisalak.coklit.data.models.UserProfile
 import id.p2kd.kalisalak.coklit.data.security.EncryptedSessionManager
 import id.p2kd.kalisalak.coklit.ui.theme.*
 import kotlinx.coroutines.launch
@@ -29,7 +36,8 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     sessionManager: EncryptedSessionManager? = null
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val activity = context as? Activity
     val actualSessionManager = sessionManager ?: remember { ApiClient.getSessionManager(context) }
     val coroutineScope = rememberCoroutineScope()
     var username by remember { mutableStateOf("") }
@@ -37,6 +45,14 @@ fun LoginScreen(
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Phone Auth states
+    var showPhoneAuthDialog by remember { mutableStateOf(false) }
+    var phoneNumberInput by remember { mutableStateOf("+62") }
+    var otpCodeInput by remember { mutableStateOf("") }
+    var verificationIdReceived by remember { mutableStateOf<String?>(null) }
+    var isSendingOtp by remember { mutableStateOf(false) }
+    var phoneAuthError by remember { mutableStateOf<String?>(null) }
 
     var showServerSettings by remember { mutableStateOf(false) }
     var serverUrlInput by remember { mutableStateOf(actualSessionManager.getServerUrl()) }
@@ -148,14 +164,14 @@ fun LoginScreen(
                         }
                     }
 
-                    // Username / NIK Field
+                    // Username / Email Field
                     OutlinedTextField(
                         value = username,
                         onValueChange = {
                             username = it
                             errorMessage = null
                         },
-                        label = { Text("Username atau NIK") },
+                        label = { Text("Username / Email / NIK") },
                         leadingIcon = {
                             Icon(Icons.Default.Person, contentDescription = null, tint = Blue400)
                         },
@@ -202,38 +218,62 @@ fun LoginScreen(
                         )
                     )
 
-                    // Submit Button
+                    // Submit Button (Email/Password or Backend Login)
                     Button(
                         onClick = {
                             if (username.isBlank() || password.isBlank()) {
-                                errorMessage = "Username dan kata sandi wajib diisi."
+                                errorMessage = "Username/Email dan kata sandi wajib diisi."
                             } else {
                                 isLoading = true
                                 errorMessage = null
 
                                 coroutineScope.launch {
-                                try {
-                                    val api = ApiClient.getService(actualSessionManager)
-                                    val response = api.login(LoginRequest(username.trim(), password))
-
-                                    if (response.isSuccessful && response.body()?.success == true) {
-                                        val body = response.body()!!
-                                        if (body.token != null && body.user != null) {
-                                            actualSessionManager.saveSession(body.token, body.user)
-                                            onLoginSuccess()
-                                        } else {
-                                            errorMessage = "Respon server tidak valid."
+                                    try {
+                                        // 1. Coba Firebase Auth jika format email
+                                        if (username.contains("@")) {
+                                            try {
+                                                val firebaseAuthResult = FirebaseAuthHelper.signInWithEmail(username, password)
+                                                val firebaseUser = firebaseAuthResult.user
+                                                if (firebaseUser != null) {
+                                                    val dummyProfile = UserProfile(
+                                                        id = firebaseUser.uid,
+                                                        username = firebaseUser.email ?: username,
+                                                        nama = firebaseUser.displayName ?: username.substringBefore("@"),
+                                                        jabatan = "Petugas Pantarlih",
+                                                        assignedRw = "RW 01",
+                                                        assignedTps = "TPS 01"
+                                                    )
+                                                    actualSessionManager.saveSession("firebase-token-", dummyProfile)
+                                                    onLoginSuccess()
+                                                    return@launch
+                                                }
+                                            } catch (fe: Exception) {
+                                                // Lanjut ke backend web login
+                                            }
                                         }
-                                    } else {
-                                        errorMessage = response.body()?.message
-                                            ?: "Gagal login. Periksa username dan kata sandi."
+
+                                        // 2. Login standar via backend API P2KD
+                                        val api = ApiClient.getService(actualSessionManager)
+                                        val response = api.login(LoginRequest(username.trim(), password))
+
+                                        if (response.isSuccessful && response.body()?.success == true) {
+                                            val body = response.body()!!
+                                            if (body.token != null && body.user != null) {
+                                                actualSessionManager.saveSession(body.token, body.user)
+                                                onLoginSuccess()
+                                            } else {
+                                                errorMessage = "Respon server tidak valid."
+                                            }
+                                        } else {
+                                            errorMessage = response.body()?.message
+                                                ?: "Gagal login. Periksa username dan kata sandi."
+                                        }
+                                    } catch (e: Exception) {
+                                        errorMessage = "Gagal terhubung: "
+                                    } finally {
+                                        isLoading = false
                                     }
-                                } catch (e: Exception) {
-                                    errorMessage = "Gagal terhubung ke server: ${e.message ?: "Periksa koneksi internet."}"
-                                } finally {
-                                    isLoading = false
                                 }
-                            }
                             }
                         },
                         enabled = !isLoading,
@@ -262,6 +302,38 @@ fun LoginScreen(
                                 fontSize = 15.sp
                             )
                         }
+                    }
+
+                    // Divider Opsi Firebase Authentication
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Navy700)
+                        Text(
+                            text = "  atau via Firebase  ",
+                            color = Slate400,
+                            fontSize = 11.sp
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Navy700)
+                    }
+
+                    // Phone Auth Button (SMS OTP)
+                    OutlinedButton(
+                        onClick = {
+                            phoneAuthError = null
+                            showPhoneAuthDialog = true
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Amber400),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Amber500.copy(alpha = 0.6f))
+                    ) {
+                        Icon(Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Masuk via Nomor HP (SMS OTP)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -310,7 +382,119 @@ fun LoginScreen(
             }
         }
     }
+
+    // Modal Dialog Phone Auth (SMS OTP)
+    if (showPhoneAuthDialog) {
+        AlertDialog(
+            onDismissRequest = { showPhoneAuthDialog = false },
+            title = { Text("Login Nomor HP (Firebase OTP)") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (phoneAuthError != null) {
+                        Text(phoneAuthError!!, color = Rose500, fontSize = 12.sp)
+                    }
+
+                    if (verificationIdReceived == null) {
+                        Text("Masukkan nomor HP terdaftar (format +62...):", fontSize = 13.sp)
+                        OutlinedTextField(
+                            value = phoneNumberInput,
+                            onValueChange = { phoneNumberInput = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            placeholder = { Text("+6281234567890") }
+                        )
+                    } else {
+                        Text("Masukkan 6 digit kode OTP yang dikirimkan via SMS:", fontSize = 13.sp)
+                        OutlinedTextField(
+                            value = otpCodeInput,
+                            onValueChange = { otpCodeInput = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            placeholder = { Text("123456") }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (verificationIdReceived == null) {
+                    Button(
+                        onClick = {
+                            if (activity != null && phoneNumberInput.isNotBlank()) {
+                                isSendingOtp = true
+                                phoneAuthError = null
+                                FirebaseAuthHelper.startPhoneVerification(
+                                    phoneNumber = phoneNumberInput.trim(),
+                                    activity = activity,
+                                    callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                                        override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                                            isSendingOtp = false
+                                            coroutineScope.launch {
+                                                try {
+                                                    val res = FirebaseAuthHelper.signInWithPhoneCredential(credential)
+                                                    val u = res.user
+                                                    if (u != null) {
+                                                        actualSessionManager.saveSession(
+                                                            "firebase-phone-",
+                                                            UserProfile(id = u.uid, username = u.phoneNumber ?: "pantarlih", nama = "Petugas Pantarlih ()")
+                                                        )
+                                                        showPhoneAuthDialog = false
+                                                        onLoginSuccess()
+                                                    }
+                                                } catch (e: Exception) {
+                                                    phoneAuthError = "Verifikasi gagal: "
+                                                }
+                                            }
+                                        }
+
+                                        override fun onVerificationFailed(e: FirebaseException) {
+                                            isSendingOtp = false
+                                            phoneAuthError = "Pengiriman SMS gagal: "
+                                        }
+
+                                        override fun onCodeSent(verificationId: String, token: PhoneAuthProvider.ForceResendingToken) {
+                                            isSendingOtp = false
+                                            verificationIdReceived = verificationId
+                                        }
+                                    }
+                                )
+                            }
+                        },
+                        enabled = !isSendingOtp
+                    ) {
+                        Text(if (isSendingOtp) "Mengirim OTP..." else "Kirim Kode SMS")
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            if (verificationIdReceived != null && otpCodeInput.isNotBlank()) {
+                                coroutineScope.launch {
+                                    try {
+                                        val res = FirebaseAuthHelper.signInWithSmsCode(verificationIdReceived!!, otpCodeInput.trim())
+                                        val u = res.user
+                                        if (u != null) {
+                                            actualSessionManager.saveSession(
+                                                "firebase-phone-",
+                                                UserProfile(id = u.uid, username = u.phoneNumber ?: "pantarlih", nama = "Petugas Pantarlih ()")
+                                            )
+                                            showPhoneAuthDialog = false
+                                            onLoginSuccess()
+                                        }
+                                    } catch (e: Exception) {
+                                        phoneAuthError = "Kode OTP tidak valid: "
+                                    }
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Verifikasi & Masuk")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPhoneAuthDialog = false }) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
 }
-
-
-
