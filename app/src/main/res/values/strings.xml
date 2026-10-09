@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">P2KD Coklit Kalisalak</string>
+    <string name="title_home">Beranda Pantarlih</string>
+    <string name="title_tasks">Daftar Tugas Coklit</string>
+    <string name="title_scan">Pemindai QR Rumah</string>
+    <string name="title_house_form">Identifikasi Rumah</string>
+    <string name="title_kk_list">Daftar Kartu Keluarga</string>
+    <string name="title_sync">Riwayat Sinkronisasi</string>
+    <string name="title_profile">Profil Petugas</string>
+</resources>

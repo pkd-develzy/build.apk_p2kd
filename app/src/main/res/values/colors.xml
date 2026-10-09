@@ -1,0 +1,11 @@
+<resources>
+    <color name="primary_navy">#0A192F</color>
+    <color name="primary_blue">#1E3A8A</color>
+    <color name="accent_gold">#D97706</color>
+    <color name="background_dark">#020617</color>
+    <color name="surface_card">#0F172A</color>
+    <color name="status_green">#10B981</color>
+    <color name="status_red">#EF4444</color>
+    <color name="text_white">#FFFFFF</color>
+    <color name="text_slate">#94A3B8</color>
+</resources>
