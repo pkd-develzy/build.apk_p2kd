@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,15 +31,14 @@ fun MoreScreen(
     onNavigateToSync: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val user = remember { sessionManager.getUserProfile() }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
     var showServerDialog by remember { mutableStateOf(false) }
-    var serverUrlInput by remember { mutableStateOf(sessionManager.getBaseUrl() ?: ApiClient.DEFAULT_BASE_URL) }
-    val queueCount = remember { offlineQueue.getQueueItems().size }
+    var serverUrlInput by remember { mutableStateOf(sessionManager.getServerUrl()) }
+    val queueCount = remember { offlineQueue.getQueue().size }
 
     Column(
         modifier = Modifier
@@ -128,7 +126,7 @@ fun MoreScreen(
                 MoreMenuItem(
                     icon = Icons.Default.Dns,
                     title = "Pengaturan Server API",
-                    subtitle = sessionManager.getBaseUrl() ?: ApiClient.DEFAULT_BASE_URL,
+                    subtitle = sessionManager.getServerUrl(),
                     onClick = { showServerDialog = true }
                 )
                 Divider(color = MaterialTheme.colorScheme.surfaceVariant)
@@ -224,7 +222,7 @@ fun MoreScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = serverUrlInput,
-                        onValueChange = { serverUrlInput = it },
+                        onValueChange = { newVal: String -> serverUrlInput = newVal },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -233,8 +231,7 @@ fun MoreScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        sessionManager.saveBaseUrl(serverUrlInput.trim())
-                        ApiClient.setBaseUrl(serverUrlInput.trim())
+                        sessionManager.setServerUrl(serverUrlInput.trim())
                         showServerDialog = false
                     }
                 ) {
