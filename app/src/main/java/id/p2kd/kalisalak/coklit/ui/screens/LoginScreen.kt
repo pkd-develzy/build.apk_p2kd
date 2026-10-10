@@ -160,18 +160,26 @@ fun LoginScreen(
                             telegramSentMessage = null
                             coroutineScope.launch {
                                 try {
-                                    val response = if (resetDialogType == "PIN") {
-                                        ApiClient.api.forgotPin(id.p2kd.kalisalak.coklit.data.models.ForgotPinRequest(reqUsername.trim()))
+                                    var isReqSuccess = false
+                                    var respMessage = ""
+                                    var respResetUrl: String? = null
+
+                                    if (resetDialogType == "PIN") {
+                                        val res = ApiClient.api.forgotPin(id.p2kd.kalisalak.coklit.data.models.ForgotPinRequest(reqUsername.trim()))
+                                        isReqSuccess = res.isSuccessful && res.body()?.success == true
+                                        respMessage = res.body()?.message ?: "Gagal memproses permintaan reset PIN."
+                                        respResetUrl = res.body()?.resetUrl
                                     } else {
-                                        ApiClient.api.forgotPassword(id.p2kd.kalisalak.coklit.data.models.ForgotPasswordRequest(reqUsername.trim()))
+                                        val res = ApiClient.api.forgotPassword(id.p2kd.kalisalak.coklit.data.models.ForgotPasswordRequest(reqUsername.trim()))
+                                        isReqSuccess = res.isSuccessful && res.body()?.success == true
+                                        respMessage = res.body()?.message ?: "Gagal memproses permintaan reset kata sandi."
+                                        respResetUrl = res.body()?.resetUrl
                                     }
 
                                     isSendingTelegram = false
-                                    if (response.isSuccessful && response.body()?.success == true) {
+                                    if (isReqSuccess) {
                                         telegramSentSuccess = true
-                                        val msg = response.body()?.message ?: "Tautan pemulihan telah dikirim ke Telegram resmi @pantarlih_bot."
-                                        val resetUrl = response.body()?.resetUrl
-                                        telegramSentMessage = if (resetUrl != null) "$msg\n\nTautan Langsung Web:\n$resetUrl" else msg
+                                        telegramSentMessage = if (respResetUrl != null) "$respMessage\n\nTautan Langsung:\n$respResetUrl" else respMessage
 
                                         // Buka aplikasi Telegram resmi @pantarlih_bot
                                         try {
@@ -180,7 +188,7 @@ fun LoginScreen(
                                         } catch (_: Exception) {}
                                     } else {
                                         telegramSentSuccess = false
-                                        telegramSentMessage = response.body()?.message ?: "Gagal memproses permintaan reset ke bot Telegram."
+                                        telegramSentMessage = respMessage
                                     }
                                 } catch (e: Exception) {
                                     isSendingTelegram = false

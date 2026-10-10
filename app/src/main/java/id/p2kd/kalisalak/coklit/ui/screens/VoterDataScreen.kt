@@ -483,56 +483,120 @@ fun VoterDataScreen(
                         }
                     }
 
-                    // Pilihan RW Tujuan
+                    // Pilihan RW Tujuan Baru (13 RW Lengkap Kalisalak via Dropdown)
+                    var isRwDropdownOpen by remember { mutableStateOf(false) }
+                    var isRtDropdownOpen by remember { mutableStateOf(false) }
+                    val allRwOptions = remember { (1..13).map { String.format("%02d", it) } }
+                    val allRtOptions = remember { (1..5).map { String.format("%02d", it) } }
+
                     Column {
-                        Text("Pilih RW Tujuan Baru:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F2042))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("01", "02", "03").forEach { rwOpt ->
-                                val isSel = targetRw == rwOpt
-                                Surface(
-                                    color = if (isSel) Color(0xFF0F2042) else Color(0xFFF1F5F9),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isSel) Color(0xFF0F2042) else Color(0xFFCBD5E1)),
-                                    shape = RoundedCornerShape(10.dp),
+                        Text("Pilih RW Tujuan Baru (13 RW Desa Kalisalak):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F2042))
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Surface(
+                                color = Color.White,
+                                shape = RoundedCornerShape(10.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF7C3AED)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isRwDropdownOpen = !isRwDropdownOpen }
+                            ) {
+                                Row(
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .clickable { targetRw = rwOpt }
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        "RW $rwOpt",
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSel) Color.White else Color(0xFF334155),
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                        modifier = Modifier.padding(vertical = 10.dp)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF7C3AED), modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("RW $targetRw - Wilayah Desa Kalisalak", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF0F2042))
+                                    }
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF7C3AED))
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = isRwDropdownOpen,
+                                onDismissRequest = { isRwDropdownOpen = false },
+                                modifier = Modifier
+                                    .fillMaxWidth(0.85f)
+                                    .background(Color.White)
+                            ) {
+                                allRwOptions.forEach { rwItem ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "RW $rwItem (Desa Kalisalak)",
+                                                fontWeight = if (targetRw == rwItem) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (targetRw == rwItem) Color(0xFF7C3AED) else Color(0xFF0F2042)
+                                            )
+                                        },
+                                        onClick = {
+                                            targetRw = rwItem
+                                            isRwDropdownOpen = false
+                                        },
+                                        leadingIcon = {
+                                            if (targetRw == rwItem) {
+                                                Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF7C3AED), modifier = Modifier.size(16.dp))
+                                            }
+                                        }
                                     )
                                 }
                             }
                         }
                     }
 
-                    // Pilihan RT Tujuan (01, 02, 03)
+                    // Pilihan RT Tujuan Baru via Dropdown (RT 01 s/d RT 05)
                     Column {
                         Text("Pilih RT Tujuan Baru:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F2042))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("01", "02", "03").forEach { rtOpt ->
-                                val isSel = targetRt == rtOpt
-                                Surface(
-                                    color = if (isSel) Color(0xFF2563EB) else Color(0xFFF1F5F9),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isSel) Color(0xFF2563EB) else Color(0xFFCBD5E1)),
-                                    shape = RoundedCornerShape(10.dp),
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Surface(
+                                color = Color.White,
+                                shape = RoundedCornerShape(10.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isRtDropdownOpen = !isRtDropdownOpen }
+                            ) {
+                                Row(
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .clickable { targetRt = rtOpt }
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        "RT $rtOpt",
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSel) Color.White else Color(0xFF334155),
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                        modifier = Modifier.padding(vertical = 10.dp)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Home, contentDescription = null, tint = Blue600, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("RT $targetRt", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color(0xFF0F2042))
+                                    }
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFF64748B))
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = isRtDropdownOpen,
+                                onDismissRequest = { isRtDropdownOpen = false },
+                                modifier = Modifier
+                                    .fillMaxWidth(0.5f)
+                                    .background(Color.White)
+                            ) {
+                                allRtOptions.forEach { rtItem ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "RT $rtItem",
+                                                fontWeight = if (targetRt == rtItem) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (targetRt == rtItem) Blue600 else Color(0xFF0F2042)
+                                            )
+                                        },
+                                        onClick = {
+                                            targetRt = rtItem
+                                            isRtDropdownOpen = false
+                                        }
                                     )
                                 }
                             }

@@ -21,6 +21,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
+import id.p2kd.kalisalak.coklit.data.update.AppUpdateManager
+import id.p2kd.kalisalak.coklit.data.update.UpdateInfo
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import id.p2kd.kalisalak.coklit.data.models.DeleteNotificationRequest
 import id.p2kd.kalisalak.coklit.data.models.NotificationItem
 import id.p2kd.kalisalak.coklit.ui.theme.*
@@ -39,8 +44,18 @@ fun NotificationCenterScreen(
     var unreadCount by remember { mutableIntStateOf(0) }
     var selectedFilter by remember { mutableStateOf("SEMUA") }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
 
     fun loadNotifications() {
+        coroutineScope.launch {
+            try {
+                val up = AppUpdateManager.checkForUpdate(context)
+                if (up != null && up.hasUpdate) {
+                    updateInfo = up
+                }
+            } catch (_: Exception) {}
+        }
         coroutineScope.launch {
             isLoading = true
             errorMessage = null

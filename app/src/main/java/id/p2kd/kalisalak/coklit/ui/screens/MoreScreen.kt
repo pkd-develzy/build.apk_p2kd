@@ -71,6 +71,8 @@ fun MoreScreen(
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showPhotoDialog by remember { mutableStateOf(false) }
     var showPinSetupDialog by remember { mutableStateOf(false) }
+    var showDisablePinConfirmDialog by remember { mutableStateOf(false) }
+    var showUnlinkTelegramConfirmDialog by remember { mutableStateOf(false) }
     var showTelegramLinkDialog by remember { mutableStateOf(false) }
 
     var isUpdatingPhoto by remember { mutableStateOf(false) }
@@ -354,6 +356,65 @@ fun MoreScreen(
             confirmButton = {
                 TextButton(onClick = { showTelegramLinkDialog = false }) {
                     Text("Tutup", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White
+        )
+    }
+
+    
+    // DIALOG KONFIRMASI: Nonaktifkan PIN
+    if (showDisablePinConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisablePinConfirmDialog = false },
+            icon = { Icon(Icons.Default.LockOpen, contentDescription = null, tint = Rose500, modifier = Modifier.size(28.dp)) },
+            title = { Text("Nonaktifkan 6-Digit PIN?", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF0F172A)) },
+            text = { Text("Setelah dinonaktifkan, aplikasi tidak akan meminta PIN saat dibuka kembali. Anda dapat masuk langsung menggunakan kata sandi akun.", fontSize = 12.sp, color = Color(0xFF475569)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        sessionManager.removePin()
+                        isPinActive = false
+                        showDisablePinConfirmDialog = false
+                        snackbarMessage = "6-Digit PIN keamanan berhasil dinonaktifkan."
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Rose500)
+                ) {
+                    Text("Ya, Nonaktifkan PIN", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisablePinConfirmDialog = false }) {
+                    Text("Batal", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White
+        )
+    }
+
+    // DIALOG KONFIRMASI: Putuskan Tautan Telegram
+    if (showUnlinkTelegramConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnlinkTelegramConfirmDialog = false },
+            icon = { Icon(Icons.Default.Cancel, contentDescription = null, tint = Rose500, modifier = Modifier.size(28.dp)) },
+            title = { Text("Putuskan Keterkaitan Telegram?", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF0F172A)) },
+            text = { Text("Tautan akun bot @pantarlih_bot akan dihapus dari HP ini. Anda dapat menautkannya kembali kapan saja.", fontSize = 12.sp, color = Color(0xFF475569)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        sessionManager.setTelegramLinked(false, null)
+                        isTelegramLinked = false
+                        showUnlinkTelegramConfirmDialog = false
+                        snackbarMessage = "Keterkaitan akun Telegram berhasil diputuskan."
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Rose500)
+                ) {
+                    Text("Ya, Putuskan Tautan", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnlinkTelegramConfirmDialog = false }) {
+                    Text("Batal", color = Color(0xFF64748B))
                 }
             },
             containerColor = Color.White
@@ -1017,19 +1078,32 @@ fun MoreScreen(
                             color = if (isPinActive) Emerald600 else Color(0xFF64748B)
                         )
                     }
-                    Button(
-                        onClick = { showPinSetupDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (isPinActive) Color(0xFFF8FAFC) else Blue600),
-                        shape = RoundedCornerShape(10.dp),
-                        border = if (isPinActive) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)) else null,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = if (isPinActive) "Ubah PIN" else "Atur PIN",
-                            color = if (isPinActive) Color(0xFF0F172A) else Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (isPinActive) {
+                            OutlinedButton(
+                                onClick = { showDisablePinConfirmDialog = true },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Rose500),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Rose500.copy(alpha = 0.5f)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Text("Nonaktifkan", color = Rose500, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        Button(
+                            onClick = { showPinSetupDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = if (isPinActive) Color(0xFFF8FAFC) else Blue600),
+                            shape = RoundedCornerShape(10.dp),
+                            border = if (isPinActive) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)) else null,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = if (isPinActive) "Ubah PIN" else "Atur PIN",
+                                color = if (isPinActive) Color(0xFF0F172A) else Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
@@ -1097,19 +1171,32 @@ fun MoreScreen(
                             color = if (isTelegramLinked) Emerald600 else Amber500
                         )
                     }
-                    Button(
-                        onClick = { showTelegramLinkDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (isTelegramLinked) Color(0xFFF8FAFC) else Color(0xFFEFF6FF)),
-                        shape = RoundedCornerShape(10.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isTelegramLinked) Color(0xFFCBD5E1) else Color(0xFFBFDBFE)),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = if (isTelegramLinked) "Atur Ulang" else "Tautkan",
-                            color = if (isTelegramLinked) Color(0xFF0F172A) else Blue600,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (isTelegramLinked) {
+                            OutlinedButton(
+                                onClick = { showUnlinkTelegramConfirmDialog = true },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Rose500),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Rose500.copy(alpha = 0.5f)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Text("Putuskan", color = Rose500, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        Button(
+                            onClick = { showTelegramLinkDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = if (isTelegramLinked) Color(0xFFF8FAFC) else Color(0xFFEFF6FF)),
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (isTelegramLinked) Color(0xFFCBD5E1) else Color(0xFFBFDBFE)),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = if (isTelegramLinked) "Atur Ulang" else "Tautkan",
+                                color = if (isTelegramLinked) Color(0xFF0F172A) else Blue600,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

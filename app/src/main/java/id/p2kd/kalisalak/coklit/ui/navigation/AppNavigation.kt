@@ -344,7 +344,7 @@ fun MainContainerScreen(
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.5f))
                                 ) {
                                     Text(
-                                        text = "v1.8.1",
+                                        text = "v" + sessionManager.getAppVersion(),
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Blue300,
@@ -366,41 +366,43 @@ fun MainContainerScreen(
                     }
                 },
                 actions = {
-                    // Notification Center Bell Icon with Glassmorphic Container & Counter
+                    // Icon Lonceng Notifikasi Interaktif Premium dengan Efek Ripple dan Red Badge Dot
                     Surface(
                         shape = CircleShape,
-                        color = Navy800,
+                        color = Color.White.copy(alpha = 0.15f),
                         border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (unreadNotificationCount > 0) Rose500.copy(alpha = 0.6f) else Slate800
+                            1.5.dp,
+                            if (unreadNotificationCount > 0) Rose500 else Color.White.copy(alpha = 0.35f)
                         ),
+                        shadowElevation = 3.dp,
                         modifier = Modifier
-                            .padding(end = 8.dp)
+                            .padding(end = 12.dp)
                             .size(42.dp)
+                            .clip(CircleShape)
                             .clickable { onNavigateToNotifications() }
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             BadgedBox(
                                 badge = {
                                     if (unreadNotificationCount > 0) {
                                         Badge(
                                             containerColor = Rose600,
-                                            contentColor = White
+                                            contentColor = Color.White
                                         ) {
                                             Text(
                                                 text = if (unreadNotificationCount > 9) "9+" else unreadNotificationCount.toString(),
                                                 fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold
+                                                fontWeight = FontWeight.ExtraBold
                                             )
                                         }
                                     }
                                 }
                             ) {
                                 Icon(
-                                    Icons.Default.Notifications,
-                                    contentDescription = "Pusat Notifikasi",
-                                    tint = if (unreadNotificationCount > 0) Rose400 else Slate300,
-                                    modifier = Modifier.size(20.dp)
+                                    imageVector = if (unreadNotificationCount > 0) Icons.Default.NotificationsActive else Icons.Default.Notifications,
+                                    contentDescription = "Pusat Notifikasi dan Pembaruan",
+                                    tint = if (unreadNotificationCount > 0) Amber400 else Color.White,
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                         }
