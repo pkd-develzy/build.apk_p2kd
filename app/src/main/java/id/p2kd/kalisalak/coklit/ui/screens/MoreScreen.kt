@@ -336,12 +336,8 @@ fun MoreScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Kebijakan 1 Akun = 1 Perangkat Aktif", fontWeight = FontWeight.Bold, color = Blue400, fontSize = 13.sp)
                     Text(
-                        "• Akun Anda saat ini aktif dan terdaftar pada perangkat ini ( ).
-
-" +
-                        "• Jika akun Anda dibuka pada smartphone lain, sesi pada HP ini otomatis keluar seketika demi keamanan dan integritas data Coklit.
-
-" +
+                        "• Akun Anda saat ini aktif dan terdaftar pada perangkat ini.\n\n" +
+                        "• Jika akun Anda dibuka pada smartphone lain, sesi pada HP ini otomatis keluar seketika demi keamanan dan integritas data Coklit.\n\n" +
                         "• Enkripsi HMAC SHA-256 dan token session unik aktif melindungi setiap pertukaran data.",
                         fontSize = 12.sp,
                         color = Slate300
