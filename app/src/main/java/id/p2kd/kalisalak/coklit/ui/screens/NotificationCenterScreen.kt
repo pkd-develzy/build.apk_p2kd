@@ -87,9 +87,9 @@ fun NotificationCenterScreen(
 
     val filteredList = remember(notificationList, selectedFilter) {
         when (selectedFilter) {
-            "TUGAS" -> notificationList.filter { it.kategori?.contains("TUGAS", ignoreCase = true) == true || it.kategori?.contains("COKLIT", ignoreCase = true) == true }
-            "DARURAT" -> notificationList.filter { it.kategori?.contains("DARURAT", ignoreCase = true) == true || it.kategori?.contains("PERINGATAN", ignoreCase = true) == true || it.kategori?.contains("PENTING", ignoreCase = true) == true }
-            "SISTEM" -> notificationList.filter { it.kategori?.contains("SISTEM", ignoreCase = true) == true || it.kategori?.contains("UPDATE", ignoreCase = true) == true }
+            "TUGAS" -> notificationList.filter { it.category?.contains("TUGAS", ignoreCase = true) == true || it.category?.contains("COKLIT", ignoreCase = true) == true }
+            "DARURAT" -> notificationList.filter { it.category?.contains("DARURAT", ignoreCase = true) == true || it.category?.contains("PERINGATAN", ignoreCase = true) == true || it.category?.contains("PENTING", ignoreCase = true) == true }
+            "SISTEM" -> notificationList.filter { it.category?.contains("SISTEM", ignoreCase = true) == true || it.category?.contains("UPDATE", ignoreCase = true) == true }
             else -> notificationList
         }
     }
@@ -414,13 +414,13 @@ fun NotificationCenterScreen(
                 }
             } else {
                 items(filteredList) { notif ->
-                    val isDarurat = notif.kategori?.contains("DARURAT", ignoreCase = true) == true ||
-                            notif.kategori?.contains("PERINGATAN", ignoreCase = true) == true ||
-                            notif.kategori?.contains("PENTING", ignoreCase = true) == true
-                    val isTugas = notif.kategori?.contains("TUGAS", ignoreCase = true) == true ||
-                            notif.kategori?.contains("COKLIT", ignoreCase = true) == true
-                    val isSistem = notif.kategori?.contains("SISTEM", ignoreCase = true) == true ||
-                            notif.kategori?.contains("UPDATE", ignoreCase = true) == true
+                    val isDarurat = notif.category?.contains("DARURAT", ignoreCase = true) == true ||
+                            notif.category?.contains("PERINGATAN", ignoreCase = true) == true ||
+                            notif.category?.contains("PENTING", ignoreCase = true) == true
+                    val isTugas = notif.category?.contains("TUGAS", ignoreCase = true) == true ||
+                            notif.category?.contains("COKLIT", ignoreCase = true) == true
+                    val isSistem = notif.category?.contains("SISTEM", ignoreCase = true) == true ||
+                            notif.category?.contains("UPDATE", ignoreCase = true) == true
 
                     val cardBg = when {
                         isDarurat -> AmberSoft
@@ -474,7 +474,7 @@ fun NotificationCenterScreen(
                                         color = Color(0x18000000)
                                     ) {
                                         Text(
-                                            text = notif.kategori ?: "PENGUMUMAN",
+                                            text = notif.category ?: "PENGUMUMAN",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = categoryTagColor,
@@ -487,11 +487,11 @@ fun NotificationCenterScreen(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(
-                                            text = notif.waktu ?: "",
+                                            text = notif.timestamp ?: "",
                                             fontSize = 11.sp,
                                             color = TextSubtle
                                         )
-                                        if (notif.isRead == false) {
+                                        if (!notif.read) {
                                             Box(
                                                 modifier = Modifier
                                                     .size(8.dp)
@@ -504,7 +504,7 @@ fun NotificationCenterScreen(
 
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = notif.judul,
+                                    text = notif.title,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     color = TextMain,
@@ -514,7 +514,7 @@ fun NotificationCenterScreen(
 
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = notif.pesan,
+                                    text = notif.body,
                                     fontSize = 12.sp,
                                     color = TextMuted,
                                     lineHeight = 17.sp,
@@ -522,35 +522,7 @@ fun NotificationCenterScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
 
-                                if (!notif.targetRole.isNullOrBlank() || !notif.targetTps.isNullOrBlank()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        if (!notif.targetTps.isNullOrBlank()) {
-                                            Surface(
-                                                shape = CircleShape,
-                                                color = RoyalSapphireBorder
-                                            ) {
-                                                Text(
-                                                    text = "TPS ${notif.targetTps}",
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = RoyalSapphireDark,
-                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
-                                        if (!notif.targetRole.isNullOrBlank()) {
-                                            Text(
-                                                text = "• ${notif.targetRole}",
-                                                fontSize = 11.sp,
-                                                color = TextSubtle
-                                            )
-                                        }
-                                    }
-                                }
+
                             }
                         }
                     }
