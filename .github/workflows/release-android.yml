@@ -11,7 +11,7 @@ on:
       tag_name:
         description: 'Tag name for GitHub Release (e.g. v1.0.0)'
         required: false
-        default: 'v1.5.0'
+        default: 'v1.5.1'
 
 permissions:
   contents: write
@@ -155,7 +155,7 @@ jobs:
           fi
 
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then
-            TAG="v1.5.0"
+            TAG="v1.5.1"
           fi
 
           echo "Mempublikasikan GitHub Release untuk tag: $TAG"
@@ -166,7 +166,7 @@ jobs:
           Aplikasi native Android resmi untuk Petugas Pemutakhiran Data Pemilih (Pantarlih) dan Panitia Pemilihan Kepala Desa (P2KD) Kalisalak.
 
           ### Informasi Rilis
-          * **Versi**: 1.5.0 (\`$TAG\`)
+          * **Versi**: 1.5.1 (\`$TAG\`)
           * **Package ID**: \`id.p2kd.kalisalak.coklit\`
           * **Status**: Production Release (Signed Digitally)
           * **Target SDK**: Android API 34 (Android 14)
