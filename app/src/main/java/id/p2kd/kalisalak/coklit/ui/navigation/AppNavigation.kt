@@ -1,6 +1,8 @@
-﻿package id.p2kd.kalisalak.coklit.ui.navigation
+package id.p2kd.kalisalak.coklit.ui.navigation
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,11 +25,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import id.p2kd.kalisalak.coklit.R
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
 import id.p2kd.kalisalak.coklit.data.local.OfflineQueueManager
 import id.p2kd.kalisalak.coklit.data.models.MemberVerificationPayload
 import id.p2kd.kalisalak.coklit.data.security.EncryptedSessionManager
 import id.p2kd.kalisalak.coklit.ui.screens.*
+import id.p2kd.kalisalak.coklit.ui.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,6 +70,7 @@ fun AppNavigation() {
                 onNavigateToNotifications = { navController.navigate("notifications") },
                 onNavigateToSync = { navController.navigate("sync") },
                 onNavigateToTasks = { navController.navigate("tasks") },
+                onSelectHouse = { rumahId -> navController.navigate("kk_list/" + rumahId) },
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
@@ -84,10 +90,8 @@ fun AppNavigation() {
         composable("notifications") {
             NotificationCenterScreen(
                 onBack = { navController.popBackStack() },
-                onNotificationClick = { notif ->
-                    if (notif.deepLink == "activity/kunjungan" || notif.deepLink == "activity/aduan" || notif.deepLink == "activity/pengumuman") {
-                        navController.popBackStack()
-                    }
+                onNotificationClick = { _ ->
+                    navController.popBackStack()
                 }
             )
         }
@@ -219,8 +223,8 @@ fun AppNavigation() {
  * 1. Beranda
  * 2. Data Pemilih
  * 3. Kamera (Floating Center Action Button)
- * 4. Aktivitas
- * 5. Lainnya
+ * 4. Rumah (Rumah Tercatat)
+ * 5. Akun (Profil & Pengaturan)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,11 +235,11 @@ fun MainContainerScreen(
     onNavigateToNotifications: () -> Unit,
     onNavigateToSync: () -> Unit,
     onNavigateToTasks: () -> Unit,
+    onSelectHouse: (String) -> Unit,
     onLogout: () -> Unit
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Beranda, 1: Data Pemilih, 3: Aktivitas, 4: Lainnya
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Beranda, 1: Data Pemilih, 3: Rumah, 4: Akun
     var unreadNotificationCount by remember { mutableIntStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
 
     // Fetch unread notification count
     LaunchedEffect(Unit) {
@@ -251,38 +255,85 @@ fun MainContainerScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        val (title, subtitle) = when (selectedTab) {
-                            0 -> "P2KD Kalisalak" to "Coklit Pilkades 2026"
-                            1 -> "Data Pemilih" to "7 Tahapan Administrasi"
-                            3 -> "Pusat Aktivitas" to "Laporan, Kunjungan & Info"
-                            else -> "Menu Lainnya" to "Profil & Pengaturan"
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Navy800,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.5f)),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_p2kd),
+                                contentDescription = "Logo Resmi P2KD",
+                                modifier = Modifier.padding(4.dp)
+                            )
                         }
-                        Text(text = title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                        Text(text = subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "P2KD KALISALAK",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = White
+                            )
+                            Text(
+                                text = when (selectedTab) {
+                                    0 -> "Pilkades 2026 • Petugas Coklit"
+                                    1 -> "Data Pemilih Warga (DPT)"
+                                    3 -> "Rumah Tercatat Lapangan"
+                                    else -> "Profil & Pengaturan Akun"
+                                },
+                                fontSize = 11.sp,
+                                color = Blue300
+                            )
+                        }
                     }
                 },
                 actions = {
-                    // Notification Center Bell Icon with Badge
-                    IconButton(onClick = onNavigateToNotifications) {
-                        BadgedBox(
-                            badge = {
-                                if (unreadNotificationCount > 0) {
-                                    Badge(
-                                        containerColor = MaterialTheme.colorScheme.error,
-                                        contentColor = MaterialTheme.colorScheme.onError
-                                    ) {
-                                        Text(text = if (unreadNotificationCount > 9) "9+" else "")
+                    // Notification Center Bell Icon with Glassmorphic Container & Counter
+                    Surface(
+                        shape = CircleShape,
+                        color = Navy800,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (unreadNotificationCount > 0) Rose500.copy(alpha = 0.6f) else Slate800
+                        ),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(42.dp)
+                            .clickable { onNavigateToNotifications() }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            BadgedBox(
+                                badge = {
+                                    if (unreadNotificationCount > 0) {
+                                        Badge(
+                                            containerColor = Rose600,
+                                            contentColor = White
+                                        ) {
+                                            Text(
+                                                text = if (unreadNotificationCount > 9) "9+" else unreadNotificationCount.toString(),
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
+                            ) {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = "Pusat Notifikasi",
+                                    tint = if (unreadNotificationCount > 0) Rose400 else Slate300,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
-                        ) {
-                            Icon(Icons.Default.Notifications, contentDescription = "Pusat Notifikasi")
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Slate950
                 )
             )
         },
@@ -295,15 +346,22 @@ fun MainContainerScreen(
                 // Bottom Navigation Bar with 5 slots
                 NavigationBar(
                     modifier = Modifier.fillMaxWidth(),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 6.dp
+                    containerColor = Slate950,
+                    tonalElevation = 8.dp
                 ) {
                     // Posisi 1: Beranda
                     NavigationBarItem(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
                         icon = { Icon(Icons.Default.Home, contentDescription = "Beranda") },
-                        label = { Text("Beranda", fontSize = 11.sp) }
+                        label = { Text("Beranda", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Blue400,
+                            selectedTextColor = Blue400,
+                            unselectedIconColor = Slate400,
+                            unselectedTextColor = Slate400,
+                            indicatorColor = Navy800
+                        )
                     )
 
                     // Posisi 2: Data Pemilih
@@ -311,7 +369,14 @@ fun MainContainerScreen(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
                         icon = { Icon(Icons.Default.People, contentDescription = "Data Pemilih") },
-                        label = { Text("Pemilih", fontSize = 11.sp) }
+                        label = { Text("Pemilih", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Blue400,
+                            selectedTextColor = Blue400,
+                            unselectedIconColor = Slate400,
+                            unselectedTextColor = Slate400,
+                            indicatorColor = Navy800
+                        )
                     )
 
                     // Posisi 3: Placeholder tengah untuk FAB Kamera
@@ -323,20 +388,34 @@ fun MainContainerScreen(
                         enabled = true
                     )
 
-                    // Posisi 4: Aktivitas
+                    // Posisi 4: Rumah Tercatat
                     NavigationBarItem(
                         selected = selectedTab == 3,
                         onClick = { selectedTab = 3 },
-                        icon = { Icon(Icons.Default.FactCheck, contentDescription = "Aktivitas") },
-                        label = { Text("Aktivitas", fontSize = 11.sp) }
+                        icon = { Icon(Icons.Default.HomeWork, contentDescription = "Rumah") },
+                        label = { Text("Rumah", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Blue400,
+                            selectedTextColor = Blue400,
+                            unselectedIconColor = Slate400,
+                            unselectedTextColor = Slate400,
+                            indicatorColor = Navy800
+                        )
                     )
 
-                    // Posisi 5: Lainnya
+                    // Posisi 5: Akun
                     NavigationBarItem(
                         selected = selectedTab == 4,
                         onClick = { selectedTab = 4 },
-                        icon = { Icon(Icons.Default.MoreHoriz, contentDescription = "Lainnya") },
-                        label = { Text("Lainnya", fontSize = 11.sp) }
+                        icon = { Icon(Icons.Default.Person, contentDescription = "Akun") },
+                        label = { Text("Akun", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Blue400,
+                            selectedTextColor = Blue400,
+                            unselectedIconColor = Slate400,
+                            unselectedTextColor = Slate400,
+                            indicatorColor = Navy800
+                        )
                     )
                 }
 
@@ -347,16 +426,17 @@ fun MainContainerScreen(
                         .align(Alignment.TopCenter)
                         .offset(y = (-20).dp)
                         .size(58.dp)
-                        .shadow(8.dp, CircleShape),
+                        .shadow(10.dp, CircleShape),
                     shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = Blue600,
+                    contentColor = White,
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp, pressedElevation = 12.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "Pindai Kamera",
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
+                        tint = White
                     )
                 }
             }
@@ -377,8 +457,10 @@ fun MainContainerScreen(
                     onNavigateToProfile = { selectedTab = 4 }
                 )
                 1 -> VoterDataScreen()
-                3 -> ActivityHubScreen(
-                    onNavigateToTasks = onNavigateToTasks
+                3 -> RegisteredHousesScreen(
+                    sessionManager = sessionManager,
+                    onNavigateToScan = onNavigateToScan,
+                    onSelectHouse = onSelectHouse
                 )
                 4 -> MoreScreen(
                     sessionManager = sessionManager,

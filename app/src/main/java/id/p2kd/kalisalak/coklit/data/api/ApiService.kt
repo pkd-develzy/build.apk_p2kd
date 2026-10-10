@@ -81,6 +81,37 @@ interface ApiService {
     @DELETE("api/app/notifications/token")
     suspend fun revokeDeviceToken(): Response<Map<String, Any>>
 
+
+    // Voter Coklit Mutation (Cocok, TMS 8 Alasan, Ubah Data)
+    @PATCH("api/app/pemilih")
+    suspend fun updateVoterStatus(
+        @Body request: VoterCoklitActionRequest
+    ): Response<VoterCoklitActionResponse>
+
+    // Tambah Pemilih Baru (Potensial)
+    @POST("api/app/pemilih")
+    suspend fun createNewVoter(
+        @Body request: CreateVoterRequest
+    ): Response<CreateVoterResponse>
+
+    // Hapus Notifikasi Permanen Per-User
+    @HTTP(method = "DELETE", path = "api/app/notifications", hasBody = true)
+    suspend fun deleteNotification(
+        @Body request: DeleteNotificationRequest
+    ): Response<Map<String, Any>>
+
+    // Ganti Kata Sandi Mandiri
+    @POST("api/app/auth/change-password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
+    ): Response<Map<String, Any>>
+
+    // Unggah / Ganti Foto Profil
+    @POST("api/app/auth/profile-photo")
+    suspend fun updateProfilePhoto(
+        @Body request: ProfilePhotoRequest
+    ): Response<ProfilePhotoResponse>
+
     // App Version & In-App Update
     @GET("api/app/version")
     suspend fun checkAppVersion(

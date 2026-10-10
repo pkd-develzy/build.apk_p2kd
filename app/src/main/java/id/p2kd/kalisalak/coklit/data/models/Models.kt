@@ -289,7 +289,15 @@ typealias QueueItem = OfflineQueueItem
 data class VoterItem(
     @SerializedName("id") val id: String = "",
     @SerializedName("nik") val nik: String = "",
+    @SerializedName("nikMasked") val nikMasked: String? = null,
+    @SerializedName("kk") val kk: String? = null,
+    @SerializedName("no_kk") val noKkRaw: String? = null,
     @SerializedName("nama") val nama: String = "",
+    @SerializedName("namaLengkap") val namaLengkap: String? = null,
+    @SerializedName("tempatLahir") val tempatLahir: String? = null,
+    @SerializedName("tanggalLahir") val tanggalLahir: String? = null,
+    @SerializedName("statusPerkawinan") val statusPerkawinan: String? = null,
+    @SerializedName("disabilitas") val disabilitas: String? = null,
     @SerializedName("jenisKelamin") val jenisKelamin: String? = "L",
     @SerializedName("usia") val usia: Int? = 0,
     @SerializedName("alamat") val alamat: String? = "",
@@ -298,9 +306,20 @@ data class VoterItem(
     @SerializedName("tps") val tps: String? = "",
     @SerializedName("tahap") val tahap: String = "DPS",
     @SerializedName("status") val status: String = "AKTIF",
+    @SerializedName("statusAktif") val statusAktif: String? = "AKTIF",
+    @SerializedName("coklitStatus") val coklitStatus: String? = "BELUM_COKLIT",
+    @SerializedName("alasanTms") val alasanTms: String? = null,
+    @SerializedName("coklitTanggal") val coklitTanggal: String? = null,
+    @SerializedName("coklitPetugas") val coklitPetugas: String? = null,
     @SerializedName("keterangan") val keterangan: String? = null,
     @SerializedName("updatedAt") val updatedAt: String? = null
-)
+) {
+    val displayName: String get() = if (!namaLengkap.isNullOrBlank()) namaLengkap else nama
+    val noKk: String get() = kk ?: noKkRaw ?: "-"
+    val displayStatusCoklit: String get() = coklitStatus ?: "BELUM_COKLIT"
+    val isSudahCoklit: Boolean get() = displayStatusCoklit == "SUDAH" || displayStatusCoklit == "COCOK" || displayStatusCoklit == "UBAH_DATA"
+    val isTms: Boolean get() = status == "TMS" || statusAktif == "TMS" || displayStatusCoklit == "TMS"
+}
 
 data class VoterStageSummary(
     @SerializedName("totalDps") val totalDps: Int = 0,
@@ -409,4 +428,76 @@ data class GitHubReleaseResponse(
 data class GitHubAsset(
     @SerializedName("name") val name: String = "",
     @SerializedName("browser_download_url") val browserDownloadUrl: String = ""
+)
+
+
+// 14. Action Coklit & Account Mutation Models
+data class VoterUpdatesPayload(
+    @SerializedName("namaLengkap") val namaLengkap: String? = null,
+    @SerializedName("tempatLahir") val tempatLahir: String? = null,
+    @SerializedName("tanggalLahir") val tanggalLahir: String? = null,
+    @SerializedName("jenisKelamin") val jenisKelamin: String? = null,
+    @SerializedName("statusPerkawinan") val statusPerkawinan: String? = null,
+    @SerializedName("disabilitas") val disabilitas: String? = null,
+    @SerializedName("alamat") val alamat: String? = null,
+    @SerializedName("rt") val rt: String? = null,
+    @SerializedName("rw") val rw: String? = null,
+    @SerializedName("tps") val tps: String? = null
+)
+
+data class VoterCoklitActionRequest(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("nik") val nik: String? = null,
+    @SerializedName("action") val action: String, // COCOK | TMS | UBAH_DATA
+    @SerializedName("alasanTms") val alasanTms: String? = null,
+    @SerializedName("updates") val updates: VoterUpdatesPayload? = null
+)
+
+data class VoterCoklitActionResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("action") val action: String = "",
+    @SerializedName("voterId") val voterId: String = "",
+    @SerializedName("message") val message: String = ""
+)
+
+data class CreateVoterRequest(
+    @SerializedName("nik") val nik: String,
+    @SerializedName("noKk") val noKk: String? = null,
+    @SerializedName("namaLengkap") val namaLengkap: String,
+    @SerializedName("tempatLahir") val tempatLahir: String? = null,
+    @SerializedName("tanggalLahir") val tanggalLahir: String,
+    @SerializedName("jenisKelamin") val jenisKelamin: String = "L",
+    @SerializedName("statusPerkawinan") val statusPerkawinan: String? = null,
+    @SerializedName("alamat") val alamat: String,
+    @SerializedName("rt") val rt: String,
+    @SerializedName("rw") val rw: String,
+    @SerializedName("tps") val tps: String? = null,
+    @SerializedName("disabilitas") val disabilitas: String? = null
+)
+
+data class CreateVoterResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("message") val message: String = "",
+    @SerializedName("data") val data: VoterItem? = null
+)
+
+data class DeleteNotificationRequest(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("ids") val ids: List<String>? = null,
+    @SerializedName("deleteAll") val deleteAll: Boolean = false
+)
+
+data class ChangePasswordRequest(
+    @SerializedName("oldPassword") val oldPassword: String,
+    @SerializedName("newPassword") val newPassword: String
+)
+
+data class ProfilePhotoRequest(
+    @SerializedName("image") val image: String
+)
+
+data class ProfilePhotoResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("fotoUrl") val fotoUrl: String? = null,
+    @SerializedName("message") val message: String = ""
 )
