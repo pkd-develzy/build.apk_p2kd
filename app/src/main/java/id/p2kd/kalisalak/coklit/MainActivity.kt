@@ -143,6 +143,9 @@ fun AppUpdateGuardWrapper(
 }
 
 /**
+ * Permission Guard Wrapper
+ */
+@Composable
 fun PermissionGuardWrapper(
     content: @Composable () -> Unit
 ) {
