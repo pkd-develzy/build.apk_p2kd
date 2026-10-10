@@ -1,5 +1,8 @@
 package id.p2kd.kalisalak.coklit.ui.screens
 
+import android.net.Uri
+import android.content.Intent
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -62,6 +65,10 @@ fun MoreScreen(
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showPhotoDialog by remember { mutableStateOf(false) }
 
+    var isUpdatingPhoto by remember { mutableStateOf(false) }
+    var photoError by remember { mutableStateOf<String?>(null) }
+    var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
     val galleryPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -118,7 +125,6 @@ fun MoreScreen(
     var isCheckingUpdate by remember { mutableStateOf(false) }
     var showDataSyncConfirmDialog by remember { mutableStateOf(false) }
 
-    var snackbarMessage by remember { mutableStateOf<String?>(null) }
     val queueCount = remember { offlineQueue.getQueue().size }
 
     // DIALOG KONFIRMASI AKSES DATA SELULER (CACHE SYNC)
@@ -407,7 +413,7 @@ fun MoreScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Kebijakan 1 Akun = 1 Perangkat Aktif", fontWeight = FontWeight.Bold, color = Blue400, fontSize = 13.sp)
-                                                            Text(
+                                                                                Text(
                         "• Akun Anda saat ini aktif dan terdaftar pada perangkat ini.\n\n" +
                         "• Jika akun Anda dibuka pada smartphone lain, sesi pada HP ini otomatis keluar seketika demi keamanan dan integritas data Coklit.\n\n" +
                         "• Enkripsi HMAC SHA-256 dan token session unik aktif melindungi setiap pertukaran data.",
