@@ -90,7 +90,7 @@ object AppUpdateManager {
                 val identity = body.buildIdentity
 
                 val latestVersion = status?.latestVersion ?: identity?.latestVersion ?: ""
-                val isAvailable = status?.updateAvailable == true || compareVersions(latestVersion, installedVersion) > 0
+                val isAvailable = compareVersions(latestVersion, installedVersion) > 0
 
                 if (isAvailable && latestVersion.isNotBlank()) {
                     val downloadUrl = status?.apkDownloadUrl?.takeIf { it.isNotBlank() && it.startsWith("http") }
@@ -109,6 +109,9 @@ object AppUpdateManager {
                         releaseNotes = notes,
                         isMandatory = status?.updateRequired ?: false
                     )
+                } else {
+                    // Versi aplikasi di perangkat sudah sama atau lebih baru dari server: TIDAK ADA UPDATE
+                    return@withContext null
                 }
             }
         } catch (_: Exception) {

@@ -112,6 +112,17 @@ interface ApiService {
         @Body request: ProfilePhotoRequest
     ): Response<ProfilePhotoResponse>
 
+    // Auth Reset PIN & Password via Telegram Bot
+    @POST("api/app/auth/forgot-pin")
+    suspend fun forgotPin(
+        @Body request: id.p2kd.kalisalak.coklit.data.models.ForgotPinRequest
+    ): Response<id.p2kd.kalisalak.coklit.data.models.ForgotPinResponse>
+
+    @POST("api/app/auth/forgot-password")
+    suspend fun forgotPassword(
+        @Body request: id.p2kd.kalisalak.coklit.data.models.ForgotPasswordRequest
+    ): Response<id.p2kd.kalisalak.coklit.data.models.ForgotPasswordResponse>
+
     // App Version & In-App Update
     @GET("api/app/version")
     suspend fun checkAppVersion(

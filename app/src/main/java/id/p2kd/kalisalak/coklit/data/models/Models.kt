@@ -576,3 +576,24 @@ data class ChangePasswordResponse(
     @SerializedName("success") val success: Boolean = true,
     @SerializedName("message") val message: String = ""
 )
+
+
+data class ForgotPinRequest(
+    val username: String
+)
+
+data class ForgotPinResponse(
+    val success: Boolean,
+    val message: String,
+    val resetUrl: String? = null
+)
+
+data class ForgotPasswordRequest(
+    val username: String
+)
+
+data class ForgotPasswordResponse(
+    val success: Boolean,
+    val message: String,
+    val resetUrl: String? = null
+)

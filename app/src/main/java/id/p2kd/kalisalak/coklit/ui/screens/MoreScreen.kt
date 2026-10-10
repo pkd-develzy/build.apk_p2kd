@@ -323,7 +323,7 @@ fun MoreScreen(
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("Langkah Penautan:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Emerald600)
                             Text("1. Klik tombol 'Buka Bot Telegram' di bawah", fontSize = 11.sp, color = Color(0xFF334155))
-                            Text("2. Tekan tombol START pada bot @P2kdKalisalak_Bot", fontSize = 11.sp, color = Color(0xFF334155))
+                            Text("2. Tekan tombol START pada bot @pantarlih_bot", fontSize = 11.sp, color = Color(0xFF334155))
                             Text("3. Akun Telegram Anda akan otomatis terhubung!", fontSize = 11.sp, color = Color(0xFF334155))
                         }
                     }
@@ -331,7 +331,7 @@ fun MoreScreen(
                     Button(
                         onClick = {
                             try {
-                                val url = "https://t.me/P2kdKalisalak_Bot?start=LINK_${user?.username ?: "PETUGAS"}"
+                                val url = "https://t.me/pantarlih_bot?start=LINK_${user?.username ?: "PETUGAS"}"
                                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                 sessionManager.setTelegramLinked(true, "@${user?.username ?: "petugas"}_klk")
                                 isTelegramLinked = true
@@ -347,7 +347,7 @@ fun MoreScreen(
                     ) {
                         Icon(Icons.Default.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Buka Bot Telegram (@P2kdKalisalak_Bot)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text("Buka Bot Telegram (@pantarlih_bot)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             },

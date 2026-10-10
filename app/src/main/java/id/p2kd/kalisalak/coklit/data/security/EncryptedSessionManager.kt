@@ -8,7 +8,22 @@ import com.google.gson.Gson
 import id.p2kd.kalisalak.coklit.data.models.UserProfile
 import java.security.MessageDigest
 
-class EncryptedSessionManager(private val context: Context) {
+class EncryptedSessionManager(val context: Context) {
+
+    fun getAppVersion(): String {
+        return try {
+            val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            pInfo.versionName ?: "1.10.3"
+        } catch (_: Exception) {
+            "1.10.3"
+        }
+    }
+
 
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)

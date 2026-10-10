@@ -143,7 +143,7 @@ fun LoginScreen(
                     ) {
                         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("Bantuan Langsung Panitia:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                            Text("Bot Telegram Resmi: @P2kdKalisalak_Bot", fontSize = 11.sp, color = Blue600)
+                            Text("Bot Telegram Resmi: @pantarlih_bot", fontSize = 11.sp, color = Blue600)
                             Text("WhatsApp Sekretariat: 0851-7154-2025", fontSize = 11.sp, color = Emerald600)
                         }
                     }
@@ -159,16 +159,34 @@ fun LoginScreen(
                             isSendingTelegram = true
                             telegramSentMessage = null
                             coroutineScope.launch {
-                                delay(800) // Simulasi pengiriman token cepat ke bot telegram
-                                telegramSentSuccess = true
-                                isSendingTelegram = false
-                                telegramSentMessage = "Tautan reset telah dikirim ke Telegram Anda. Silakan buka aplikasi Telegram dan klik tautan untuk membuat ${resetDialogType} baru."
-
-                                // Buka aplikasi Telegram langsung
                                 try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/P2kdKalisalak_Bot"))
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {}
+                                    val response = if (resetDialogType == "PIN") {
+                                        ApiClient.api.forgotPin(id.p2kd.kalisalak.coklit.data.models.ForgotPinRequest(reqUsername.trim()))
+                                    } else {
+                                        ApiClient.api.forgotPassword(id.p2kd.kalisalak.coklit.data.models.ForgotPasswordRequest(reqUsername.trim()))
+                                    }
+
+                                    isSendingTelegram = false
+                                    if (response.isSuccessful && response.body()?.success == true) {
+                                        telegramSentSuccess = true
+                                        val msg = response.body()?.message ?: "Tautan pemulihan telah dikirim ke Telegram resmi @pantarlih_bot."
+                                        val resetUrl = response.body()?.resetUrl
+                                        telegramSentMessage = if (resetUrl != null) "$msg\n\nTautan Langsung Web:\n$resetUrl" else msg
+
+                                        // Buka aplikasi Telegram resmi @pantarlih_bot
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/pantarlih_bot"))
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {}
+                                    } else {
+                                        telegramSentSuccess = false
+                                        telegramSentMessage = response.body()?.message ?: "Gagal memproses permintaan reset ke bot Telegram."
+                                    }
+                                } catch (e: Exception) {
+                                    isSendingTelegram = false
+                                    telegramSentSuccess = false
+                                    telegramSentMessage = "Gagal terhubung ke server: ${e.localizedMessage}"
+                                }
                             }
                         }
                     },

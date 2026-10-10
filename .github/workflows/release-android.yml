@@ -1,4 +1,4 @@
-﻿name: Production Release Android APK
+name: Production Release Android APK
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       tag_name:
         description: 'Tag name for GitHub Release (e.g. v1.0.0)'
         required: false
-        default: 'v1.10.3'
+        default: 'v1.10.4'
 
 permissions:
   contents: write
@@ -155,13 +155,13 @@ jobs:
           fi
 
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then
-            TAG="v1.10.3"
+            TAG="v1.10.4"
           fi
 
           echo "Mempublikasikan GitHub Release untuk tag: $TAG"
 
           cat << EOF > release_notes.md
-          ## P2KD Kalisalak — Aplikasi Coklit Pemilih Pilkades (Production Release)
+          ## P2KD Kalisalak � Aplikasi Coklit Pemilih Pilkades (Production Release)
 
           Aplikasi native Android resmi untuk Petugas Pemutakhiran Data Pemilih (Pantarlih) dan Panitia Pemilihan Kepala Desa (P2KD) Kalisalak.
 
