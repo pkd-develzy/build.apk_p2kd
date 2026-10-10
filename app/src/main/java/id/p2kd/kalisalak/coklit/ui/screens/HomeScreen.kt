@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
 import id.p2kd.kalisalak.coklit.data.local.OfflineQueueManager
 import id.p2kd.kalisalak.coklit.data.models.TaskSummary
@@ -162,18 +164,27 @@ fun HomeScreen(
                                 border = androidx.compose.foundation.BorderStroke(2.dp, Blue400),
                                 modifier = Modifier.size(52.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    val initials = (userProfile?.nama ?: "P").split(" ")
-                                        .take(2)
-                                        .mapNotNull { it.firstOrNull()?.toString() }
-                                        .joinToString("")
-                                        .ifBlank { "P" }
-                                    Text(
-                                        text = initials,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = White
-                                    )
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    if (!userProfile?.fotoUrl.isNullOrBlank()) {
+                                        AsyncImage(
+                                            model = userProfile?.fotoUrl,
+                                            contentDescription = "Foto Petugas",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        val initials = (userProfile?.nama ?: "P").split(" ")
+                                            .take(2)
+                                            .mapNotNull { it.firstOrNull()?.toString() }
+                                            .joinToString("")
+                                            .ifBlank { "P" }
+                                        Text(
+                                            text = initials,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = White
+                                        )
+                                    }
                                 }
                             }
                             // Online indicator dot
@@ -462,12 +473,12 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(text = "Stiker Tersedia", fontSize = 11.sp, color = Slate400)
-                        Icon(Icons.Default.QrCode, contentDescription = null, tint = Blue400, modifier = Modifier.size(16.dp))
+                        Text(text = "Rumah Terdata", fontSize = 11.sp, color = Slate400)
+                        Icon(Icons.Default.Home, contentDescription = null, tint = Blue400, modifier = Modifier.size(16.dp))
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${summary.stikerTersedia} Pcs",
+                        text = "${summary.totalRumah} Rumah",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = White
@@ -489,9 +500,9 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(text = "Antrean Offline", fontSize = 11.sp, color = Slate400)
+                        Text(text = "Sinkronisasi Cloud", fontSize = 11.sp, color = Slate400)
                         Icon(
-                            Icons.Default.Sync,
+                            if (pendingSyncCount > 0) Icons.Default.Sync else Icons.Default.CloudDone,
                             contentDescription = null,
                             tint = if (pendingSyncCount > 0) Amber400 else Emerald400,
                             modifier = Modifier.size(16.dp)
@@ -499,7 +510,7 @@ fun HomeScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = if (pendingSyncCount > 0) "$pendingSyncCount Menunggu" else "Tersinkron",
+                        text = if (pendingSyncCount > 0) "$pendingSyncCount Menunggu" else "Otomatis Aktif",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (pendingSyncCount > 0) Amber400 else Emerald400
@@ -507,8 +518,7 @@ fun HomeScreen(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(30.dp))
     }
 }
 

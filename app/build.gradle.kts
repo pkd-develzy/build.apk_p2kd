@@ -13,8 +13,8 @@ android {
         applicationId = "id.p2kd.kalisalak.coklit"
         minSdk = 24
         targetSdk = 34
-        versionCode = 10
-        versionName = "1.7.3"
+        versionCode = 11
+        versionName = "1.8.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -107,6 +107,10 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+
+    // Image Loading (Cloudinary & Base64 Photos) + GIF Animation Decoder
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-gif:2.6.0")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)

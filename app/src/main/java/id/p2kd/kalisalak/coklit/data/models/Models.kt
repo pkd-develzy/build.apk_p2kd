@@ -433,6 +433,8 @@ data class GitHubAsset(
 
 // 14. Action Coklit & Account Mutation Models
 data class VoterUpdatesPayload(
+    @SerializedName("nik") val nik: String? = null,
+    @SerializedName("noKk") val noKk: String? = null,
     @SerializedName("namaLengkap") val namaLengkap: String? = null,
     @SerializedName("tempatLahir") val tempatLahir: String? = null,
     @SerializedName("tanggalLahir") val tanggalLahir: String? = null,

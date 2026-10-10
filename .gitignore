@@ -18,3 +18,7 @@ output-metadata.json
 *.p12
 *.key
 
+
+# Root design assets
+/Pantarlih.png
+/welcome_screen.gif

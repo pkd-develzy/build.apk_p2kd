@@ -82,7 +82,7 @@ fun VoterDataScreen(
                     tahap = "CALON_DPS",
                     search = if (searchQuery.isBlank()) null else searchQuery.trim(),
                     page = 1,
-                    limit = 100
+                    limit = 1000
                 )
                 if (res.isSuccessful && res.body()?.success == true) {
                     val body = res.body()!!
@@ -242,90 +242,297 @@ fun VoterDataScreen(
         )
     }
 
-    // Modal Edit Voter Dialog
+    // Modal Coklit Perbaikan Data Pemilih (Hanya Elemen yang Dicentang yang Diubah)
     if (showEditDialogFor != null) {
         val voter = showEditDialogFor!!
+
+        // Checklist pilihan elemen yang tidak cocok
+        var checkNik by remember { mutableStateOf(false) }
+        var checkNoKk by remember { mutableStateOf(false) }
+        var checkNama by remember { mutableStateOf(false) }
+        var checkTglLahir by remember { mutableStateOf(false) }
+        var checkKelamin by remember { mutableStateOf(false) }
+        var checkKawin by remember { mutableStateOf(false) }
+        var checkAlamat by remember { mutableStateOf(false) }
+        var checkRt by remember { mutableStateOf(false) }
+        var checkDisabilitas by remember { mutableStateOf(false) }
+
+        // Nilai input form
+        var editNik by remember { mutableStateOf(voter.nik) }
+        var editNoKk by remember { mutableStateOf(voter.noKk) }
         var editNama by remember { mutableStateOf(voter.displayName) }
         var editTglLahir by remember { mutableStateOf(voter.tanggalLahir ?: "") }
+        var editKelamin by remember { mutableStateOf(voter.jenisKelamin ?: "L") }
         var editKawin by remember { mutableStateOf(voter.statusPerkawinan ?: "Kawin") }
         var editAlamat by remember { mutableStateOf(voter.alamat ?: "") }
-        var editRt by remember { mutableStateOf(voter.rt ?: "01") }
-        var editRw by remember { mutableStateOf(voter.rw ?: "01") }
-        var editDisabilitas by remember { mutableStateOf(voter.disabilitas ?: "TIDAK") }
+        var editRt by remember { mutableStateOf((voter.rt ?: "01").padStart(2, '0')) }
+        var editDisabilitas by remember { mutableStateOf(voter.disabilitas ?: "Bukan Penyandang Disabilitas") }
+
+        var validationError by remember { mutableStateOf<String?>(null) }
 
         AlertDialog(
             onDismissRequest = { if (!actionInProgress) showEditDialogFor = null },
-            title = { Text("Ubah Elemen Data Pemilih", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White) },
+            title = {
+                Column {
+                    Text("Perbaiki Elemen Data Pemilih", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White)
+                    Text("Centang elemen data di bawah yang keliru di KTP/KK:", fontSize = 11.sp, color = Amber400)
+                }
+            },
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("NIK: ${voter.nik}", fontSize = 12.sp, color = Blue400, fontWeight = FontWeight.Bold)
-                    OutlinedTextField(
-                        value = editNama,
-                        onValueChange = { editNama = it },
-                        label = { Text("Nama Lengkap", fontSize = 11.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = editTglLahir,
-                        onValueChange = { editTglLahir = it },
-                        label = { Text("Tanggal Lahir (YYYY-MM-DD)", fontSize = 11.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = editKawin,
-                        onValueChange = { editKawin = it },
-                        label = { Text("Status Perkawinan (Kawin / Belum / Pernah)", fontSize = 11.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = editAlamat,
-                        onValueChange = { editAlamat = it },
-                        label = { Text("Alamat Dusun", fontSize = 11.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = editRt,
-                            onValueChange = { editRt = it },
-                            label = { Text("RT", fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = editRw,
-                            onValueChange = { editRw = it },
-                            label = { Text("RW", fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
+                    if (validationError != null) {
+                        Surface(
+                            color = Rose900.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Rose500)
+                        ) {
+                            Text(validationError!!, fontSize = 11.sp, color = Rose400, modifier = Modifier.padding(8.dp))
+                        }
                     }
-                    OutlinedTextField(
-                        value = editDisabilitas,
-                        onValueChange = { editDisabilitas = it },
-                        label = { Text("Ragam Disabilitas (TIDAK / Fisik / Netra / dll)", fontSize = 11.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+
+                    // 1. ELEMEN NIK
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkNik) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkNik = !checkNik }) {
+                                Checkbox(checked = checkNik, onCheckedChange = { checkNik = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Nomor NIK", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkNik) {
+                                OutlinedTextField(
+                                    value = editNik,
+                                    onValueChange = { if (it.length <= 16 && it.all { c -> c.isDigit() }) editNik = it },
+                                    label = { Text("Nomor NIK Baru (16 Digit Angka)", fontSize = 11.sp) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // 2. ELEMEN NO KK
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkNoKk) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkNoKk = !checkNoKk }) {
+                                Checkbox(checked = checkNoKk, onCheckedChange = { checkNoKk = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Nomor KK", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkNoKk) {
+                                OutlinedTextField(
+                                    value = editNoKk,
+                                    onValueChange = { if (it.length <= 16 && it.all { c -> c.isDigit() }) editNoKk = it },
+                                    label = { Text("Nomor KK Baru (16 Digit Angka)", fontSize = 11.sp) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // 3. ELEMEN NAMA
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkNama) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkNama = !checkNama }) {
+                                Checkbox(checked = checkNama, onCheckedChange = { checkNama = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Nama Lengkap", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkNama) {
+                                OutlinedTextField(
+                                    value = editNama,
+                                    onValueChange = { editNama = it },
+                                    label = { Text("Nama Lengkap Sesuai KTP", fontSize = 11.sp) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // 4. ELEMEN TANGGAL LAHIR
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkTglLahir) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkTglLahir = !checkTglLahir }) {
+                                Checkbox(checked = checkTglLahir, onCheckedChange = { checkTglLahir = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Tanggal Lahir", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkTglLahir) {
+                                OutlinedTextField(
+                                    value = editTglLahir,
+                                    onValueChange = { editTglLahir = it },
+                                    label = { Text("Format: YYYY-MM-DD (Contoh: 1990-05-12)", fontSize = 11.sp) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // 5. ELEMEN JENIS KELAMIN
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkKelamin) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkKelamin = !checkKelamin }) {
+                                Checkbox(checked = checkKelamin, onCheckedChange = { checkKelamin = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Jenis Kelamin", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkKelamin) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(
+                                        onClick = { editKelamin = "L" },
+                                        colors = ButtonDefaults.buttonColors(containerColor = if (editKelamin == "L") Blue600 else Slate800),
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("Laki-laki (L)", fontSize = 11.sp, color = White)
+                                    }
+                                    Button(
+                                        onClick = { editKelamin = "P" },
+                                        colors = ButtonDefaults.buttonColors(containerColor = if (editKelamin == "P") Rose600 else Slate800),
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("Perempuan (P)", fontSize = 11.sp, color = White)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 6. ELEMEN STATUS PERKAWINAN
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkKawin) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkKawin = !checkKawin }) {
+                                Checkbox(checked = checkKawin, onCheckedChange = { checkKawin = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Status Perkawinan", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkKawin) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf("Belum Kawin", "Kawin", "Pernah Kawin").forEach { st ->
+                                        Button(
+                                            onClick = { editKawin = st },
+                                            colors = ButtonDefaults.buttonColors(containerColor = if (editKawin == st) Amber600 else Slate800),
+                                            modifier = Modifier.weight(1f),
+                                            contentPadding = PaddingValues(horizontal = 4.dp),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(st, fontSize = 10.sp, color = White)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 7. ELEMEN RT
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkRt) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRt = !checkRt }) {
+                                Checkbox(checked = checkRt, onCheckedChange = { checkRt = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Nomor RT (01 - 03)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkRt) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf("01", "02", "03").forEach { rtOpt ->
+                                        Button(
+                                            onClick = { editRt = rtOpt },
+                                            colors = ButtonDefaults.buttonColors(containerColor = if (editRt == rtOpt) Blue600 else Slate800),
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("RT $rtOpt", fontSize = 11.sp, color = White)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 8. ELEMEN ALAMAT
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkAlamat) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkAlamat = !checkAlamat }) {
+                                Checkbox(checked = checkAlamat, onCheckedChange = { checkAlamat = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Alamat Dusun", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkAlamat) {
+                                OutlinedTextField(
+                                    value = editAlamat,
+                                    onValueChange = { editAlamat = it },
+                                    label = { Text("Nama Jalan / Gang / Dusun", fontSize = 11.sp) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // 9. ELEMEN DISABILITAS
+                    Surface(color = Navy800.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if (checkDisabilitas) Blue500 else Slate800)) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkDisabilitas = !checkDisabilitas }) {
+                                Checkbox(checked = checkDisabilitas, onCheckedChange = { checkDisabilitas = it })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Perbaiki Ragam Disabilitas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
+                            if (checkDisabilitas) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
+                                    listOf("Bukan Penyandang Disabilitas", "Fisik", "Netra", "Rungu", "Wicara", "Mental").forEach { disOpt ->
+                                        Surface(
+                                            color = if (editDisabilitas == disOpt) Emerald900.copy(alpha = 0.4f) else Navy800,
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, if (editDisabilitas == disOpt) Emerald500 else Slate800),
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.fillMaxWidth().clickable { editDisabilitas = disOpt }
+                                        ) {
+                                            Text(disOpt, fontSize = 11.sp, color = if (editDisabilitas == disOpt) Emerald400 else Slate300, modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
+                        val hasAnyCheck = checkNik || checkNoKk || checkNama || checkTglLahir || checkKelamin || checkKawin || checkAlamat || checkRt || checkDisabilitas
+                        if (!hasAnyCheck) {
+                            validationError = "Pilih minimal satu elemen data yang keliru untuk diperbaiki."
+                            return@Button
+                        }
+                        if (checkNik && editNik.length != 16) {
+                            validationError = "Nomor NIK harus tepat 16 digit angka."
+                            return@Button
+                        }
+                        if (checkNoKk && editNoKk.length != 16) {
+                            validationError = "Nomor KK harus tepat 16 digit angka."
+                            return@Button
+                        }
+
                         val updates = VoterUpdatesPayload(
-                            namaLengkap = editNama,
-                            tanggalLahir = editTglLahir,
-                            statusPerkawinan = editKawin,
-                            alamat = editAlamat,
-                            rt = editRt,
-                            rw = editRw,
-                            disabilitas = editDisabilitas
+                            nik = if (checkNik) editNik else null,
+                            noKk = if (checkNoKk) editNoKk else null,
+                            namaLengkap = if (checkNama) editNama else null,
+                            tanggalLahir = if (checkTglLahir) editTglLahir else null,
+                            jenisKelamin = if (checkKelamin) editKelamin else null,
+                            statusPerkawinan = if (checkKawin) editKawin else null,
+                            alamat = if (checkAlamat) editAlamat else null,
+                            rt = if (checkRt) editRt else null,
+                            disabilitas = if (checkDisabilitas) editDisabilitas else null
                         )
                         submitCoklikAction(voter, "UBAH_DATA", updates = updates)
                     },
@@ -335,7 +542,7 @@ fun VoterDataScreen(
                     if (actionInProgress) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), color = White, strokeWidth = 2.dp)
                     } else {
-                        Text("Simpan Perbaikan Data", color = White)
+                        Text("Simpan Perbaikan Data", color = White, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -556,10 +763,7 @@ fun VoterDataScreen(
                     "TMS" to "TMS",
                     "RT01" to "RT 01",
                     "RT02" to "RT 02",
-                    "RT03" to "RT 03",
-                    "RT04" to "RT 04",
-                    "RT05" to "RT 05",
-                    "RT06" to "RT 06"
+                    "RT03" to "RT 03"
                 )
                 items(chips) { (key, label) ->
                     val isSelected = selectedFilterChip == key

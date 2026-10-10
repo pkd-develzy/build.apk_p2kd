@@ -44,6 +44,7 @@ import androidx.core.content.ContextCompat
 import id.p2kd.kalisalak.coklit.data.update.AppUpdateManager
 import id.p2kd.kalisalak.coklit.data.update.UpdateInfo
 import id.p2kd.kalisalak.coklit.ui.navigation.AppNavigation
+import id.p2kd.kalisalak.coklit.ui.screens.WelcomeScreen
 import id.p2kd.kalisalak.coklit.ui.theme.*
 
 class MainActivity : ComponentActivity() {
@@ -56,9 +57,25 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    PermissionGuardWrapper {
-                        AppUpdateGuardWrapper {
-                            AppNavigation()
+                    var showWelcomeScreen by remember { mutableStateOf(true) }
+
+                    AnimatedVisibility(
+                        visible = showWelcomeScreen,
+                        exit = fadeOut()
+                    ) {
+                        WelcomeScreen(
+                            onFinish = { showWelcomeScreen = false }
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = !showWelcomeScreen,
+                        enter = fadeIn()
+                    ) {
+                        PermissionGuardWrapper {
+                            AppUpdateGuardWrapper {
+                                AppNavigation()
+                            }
                         }
                     }
                 }

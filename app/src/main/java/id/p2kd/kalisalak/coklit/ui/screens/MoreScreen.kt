@@ -29,6 +29,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
+import java.io.ByteArrayOutputStream
 import id.p2kd.kalisalak.coklit.R
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
 import id.p2kd.kalisalak.coklit.data.local.LocalVoterCacheManager
@@ -53,6 +61,55 @@ fun MoreScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showPhotoDialog by remember { mutableStateOf(false) }
+
+    val galleryPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            coroutineScope.launch {
+                isUpdatingPhoto = true
+                photoError = null
+                try {
+                    val stream = context.contentResolver.openInputStream(uri)
+                    val bmp = BitmapFactory.decodeStream(stream)
+                    stream?.close()
+                    if (bmp != null) {
+                        val maxDim = 512
+                        val scaled = if (bmp.width > maxDim || bmp.height > maxDim) {
+                            val factor = minOf(maxDim.toFloat() / bmp.width, maxDim.toFloat() / bmp.height)
+                            Bitmap.createScaledBitmap(bmp, (bmp.width * factor).toInt(), (bmp.height * factor).toInt(), true)
+                        } else {
+                            bmp
+                        }
+                        val baos = ByteArrayOutputStream()
+                        scaled.compress(Bitmap.CompressFormat.JPEG, 85, baos)
+                        val bytes = baos.toByteArray()
+                        val base64Data = "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+
+                        val res = ApiClient.api.updateProfilePhoto(ProfilePhotoRequest(image = base64Data))
+                        if (res.isSuccessful && res.body()?.success == true) {
+                            val updatedUser = user?.copy(fotoUrl = base64Data)
+                            if (updatedUser != null) {
+                                val token = sessionManager.getAuthToken() ?: ""
+                                sessionManager.saveSession(token, updatedUser)
+                                user = updatedUser
+                            }
+                            snackbarMessage = "Foto profil berhasil diunggah dari galeri!"
+                            showPhotoDialog = false
+                        } else {
+                            photoError = res.body()?.message ?: "Gagal memperbarui foto profil."
+                        }
+                    } else {
+                        photoError = "Gagal memproses file gambar galeri."
+                    }
+                } catch (e: Exception) {
+                    photoError = "Gagal membuka galeri: " + (e.localizedMessage ?: "Coba lagi")
+                } finally {
+                    isUpdatingPhoto = false
+                }
+            }
+        }
+    }
     var showSessionInfoDialog by remember { mutableStateOf(false) }
     var showRegulationDialog by remember { mutableStateOf(false) }
     var showHelpdeskDialog by remember { mutableStateOf(false) }
@@ -257,7 +314,7 @@ fun MoreScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Foto resmi Anda akan diunggah ke cloud storage P2KD Kalisalak melalui jaringan seluler. Pastikan ukuran foto wajar (< 2 MB):", fontSize = 12.sp, color = Slate300)
+                    Text("Pilih foto resmi wajah Anda langsung dari galeri HP (format PNG atau JPG):", fontSize = 12.sp, color = Slate300)
 
                     if (photoError != null) {
                         Surface(
@@ -269,10 +326,25 @@ fun MoreScreen(
                         }
                     }
 
+                    Button(
+                        onClick = { galleryPickerLauncher.launch("image/*") },
+                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(46.dp),
+                        enabled = !isUpdatingPhoto
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pilih Foto dari Galeri HP", color = White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Atau masukkan tautan foto alternatif:", fontSize = 11.sp, color = Slate400)
+
                     OutlinedTextField(
                         value = photoUrlInput,
                         onValueChange = { photoUrlInput = it },
-                        label = { Text("Tautan Foto (https://...)", fontSize = 11.sp) },
+                        label = { Text("Tautan Foto Web (Opsional)", fontSize = 11.sp) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -335,7 +407,7 @@ fun MoreScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Kebijakan 1 Akun = 1 Perangkat Aktif", fontWeight = FontWeight.Bold, color = Blue400, fontSize = 13.sp)
-                    Text(
+                                                            Text(
                         "• Akun Anda saat ini aktif dan terdaftar pada perangkat ini.\n\n" +
                         "• Jika akun Anda dibuka pada smartphone lain, sesi pada HP ini otomatis keluar seketika demi keamanan dan integritas data Coklit.\n\n" +
                         "• Enkripsi HMAC SHA-256 dan token session unik aktif melindungi setiap pertukaran data.",
@@ -374,7 +446,7 @@ fun MoreScreen(
                         }
                     } else {
                         Text(
-                            text = updateCheckResult ?: "Aplikasi Anda versi 1.7.3 sudah menggunakan versi resmi paling mutakhir.",
+                            text = updateCheckResult ?: "Aplikasi Anda versi 1.8.1 sudah menggunakan versi resmi paling mutakhir.",
                             fontSize = 13.sp,
                             color = Slate300
                         )
@@ -394,24 +466,44 @@ fun MoreScreen(
         )
     }
 
-    // DIALOG 5: Pusat Bantuan & Helpdesk Panitia
+    // DIALOG 5: Pusat Bantuan & Helpdesk Panitia (Integrasi Langsung WhatsApp 0851-7154-2025)
     if (showHelpdeskDialog) {
         AlertDialog(
             onDismissRequest = { showHelpdeskDialog = false },
-            icon = { Icon(Icons.Default.HeadsetMic, contentDescription = null, tint = Blue400, modifier = Modifier.size(28.dp)) },
-            title = { Text("Sekretariat P2KD Kalisalak", fontWeight = FontWeight.Bold, color = White) },
+            icon = { Icon(Icons.Default.HeadsetMic, contentDescription = null, tint = Emerald400, modifier = Modifier.size(28.dp)) },
+            title = { Text("Sekretariat Resmi P2KD Kalisalak", fontWeight = FontWeight.Bold, color = White) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Layanan Bantuan & Konsultasi Pantarlih:", fontSize = 12.sp, color = Slate400)
-                    Text("📍 Balai Desa Kalisalak, Kec. Margasari, Kab. Tegal", fontSize = 13.sp, color = White, fontWeight = FontWeight.SemiBold)
-                    Text("📞 WhatsApp Panitia: 0812-3456-7890", fontSize = 13.sp, color = Emerald400, fontWeight = FontWeight.Bold)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Layanan Konsultasi & Pendampingan Petugas Lapangan:", fontSize = 12.sp, color = Slate300)
+                    Text("📍 Kantor Sekretariat P2KD Balai Desa Kalisalak", fontSize = 12.sp, color = White, fontWeight = FontWeight.SemiBold)
+                    Text("📞 WhatsApp Resmi: 0851-7154-2025", fontSize = 13.sp, color = Emerald400, fontWeight = FontWeight.Bold)
                     Text("📧 Email: sekretariat@p2kdkalisalak.my.id", fontSize = 12.sp, color = Blue300)
-                    Text("🕒 Jam Layanan: 08:00 - 21:00 WIB Setiap Hari", fontSize = 12.sp, color = Slate300)
+                    Text("🕒 Jam Layanan: 08:00 - 21:00 WIB Setiap Hari", fontSize = 11.sp, color = Slate400)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = {
+                            try {
+                                val uri = Uri.parse("https://wa.me/6285171542025?text=Halo%20Sekretariat%20P2KD%20Kalisalak%2C%20saya%20petugas%20lapangan%20ingin%20berkonsultasi...")
+                                val intent = Intent(Intent.ACTION_VIEW, uri)
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                snackbarMessage = "Tidak dapat membuka WhatsApp: " + (e.localizedMessage ?: "Periksa aplikasi WA")
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Chat, contentDescription = null, tint = White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Buka WhatsApp Panitia", color = White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = { showHelpdeskDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Blue600), shape = RoundedCornerShape(10.dp)) {
-                    Text("Tutup", color = White)
+                TextButton(onClick = { showHelpdeskDialog = false }) {
+                    Text("Tutup", color = Slate400)
                 }
             },
             containerColor = Navy900
@@ -534,18 +626,27 @@ fun MoreScreen(
                         color = Blue950,
                         border = androidx.compose.foundation.BorderStroke(2.dp, Blue400)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            val initials = (user?.nama ?: "P").split(" ")
-                                .take(2)
-                                .mapNotNull { it.firstOrNull()?.toString() }
-                                .joinToString("")
-                                .ifBlank { "P" }
-                            Text(
-                                text = initials,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Black,
-                                color = White
-                            )
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            if (!user?.fotoUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = user?.fotoUrl,
+                                    contentDescription = "Foto Profil Petugas",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                val initials = (user?.nama ?: "P").split(" ")
+                                    .take(2)
+                                    .mapNotNull { it.firstOrNull()?.toString() }
+                                    .joinToString("")
+                                    .ifBlank { "P" }
+                                Text(
+                                    text = initials,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = White
+                                )
+                            }
                         }
                     }
 
@@ -571,8 +672,11 @@ fun MoreScreen(
                                 color = Emerald900.copy(alpha = 0.3f),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Emerald500.copy(alpha = 0.4f))
                             ) {
+                                val cleanJabatan = (user?.jabatan ?: "Petugas Pantarlih")
+                                    .replace(Regex("\\s*\\(RW[^)]*\\)", RegexOption.IGNORE_CASE), "")
+                                    .trim()
                                 Text(
-                                    text = user?.jabatan ?: "Pantarlih",
+                                    text = cleanJabatan,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Emerald400,
@@ -584,8 +688,10 @@ fun MoreScreen(
                                 color = Blue600.copy(alpha = 0.2f),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Blue500.copy(alpha = 0.4f))
                             ) {
+                                val rwNum = (user?.assignedRw ?: "01").replace(Regex("[^0-9]"), "").padStart(2, '0')
+                                val tpsNum = (user?.assignedTps ?: "01").replace(Regex("[^0-9]"), "").padStart(2, '0')
                                 Text(
-                                    text = user?.assignedRw ?: user?.assignedTps ?: "Kalisalak",
+                                    text = "Wilayah: RW $rwNum / TPS $tpsNum",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Blue300,
@@ -682,7 +788,7 @@ fun MoreScreen(
                 ) {
                     SystemStatusBox(
                         title = "Basis Data",
-                        value = "Supabase Cloud",
+                        value = "Pusat Data Terenkripsi P2KD Kalisalak",
                         icon = Icons.Default.CloudDone,
                         accentColor = Blue400,
                         modifier = Modifier.weight(1f),
@@ -692,7 +798,7 @@ fun MoreScreen(
                     )
                     SystemStatusBox(
                         title = "Versi Sistem",
-                        value = "v1.7.3 (Build 10)",
+                        value = "v1.8.1",
                         icon = Icons.Default.CheckCircle,
                         accentColor = Indigo400,
                         modifier = Modifier.weight(1f),
@@ -701,19 +807,19 @@ fun MoreScreen(
                                 showUpdateCheckDialog = true
                                 isCheckingUpdate = true
                                 try {
-                                    val res = ApiClient.api.checkAppVersion("1.7.3")
+                                    val res = ApiClient.api.checkAppVersion("1.8.1")
                                     if (res.isSuccessful && res.body()?.success == true) {
                                         val status = res.body()!!.updateStatus
                                         updateCheckResult = if (status?.updateAvailable == true) {
                                             "Tersedia versi baru: " + status.latestVersion + ". Silakan unduh melalui notifikasi."
                                         } else {
-                                            "Aplikasi Anda sudah versi resmi terbaru (v1.7.3)."
+                                            "Aplikasi Anda sudah versi resmi terbaru (v1.8.1)."
                                         }
                                     } else {
-                                        updateCheckResult = "Aplikasi Anda versi 1.7.3 sudah menggunakan rilis resmi terbaru."
+                                        updateCheckResult = "Aplikasi Anda versi 1.8.1 sudah menggunakan rilis resmi terbaru."
                                     }
                                 } catch (_: Exception) {
-                                    updateCheckResult = "Versi Anda v1.7.3 adalah rilis resmi lapangan terbaru."
+                                    updateCheckResult = "Versi Anda v1.8.1 adalah rilis resmi lapangan terbaru."
                                 } finally {
                                     isCheckingUpdate = false
                                 }
@@ -766,19 +872,19 @@ fun MoreScreen(
                             showUpdateCheckDialog = true
                             isCheckingUpdate = true
                             try {
-                                val res = ApiClient.api.checkAppVersion("1.7.3")
+                                val res = ApiClient.api.checkAppVersion("1.8.1")
                                 if (res.isSuccessful && res.body()?.success == true) {
                                     val status = res.body()!!.updateStatus
                                     updateCheckResult = if (status?.updateAvailable == true) {
                                         "Tersedia versi baru: " + status.latestVersion
                                     } else {
-                                        "Aplikasi Anda sudah versi resmi terbaru (v1.7.3)."
+                                        "Aplikasi Anda sudah versi resmi terbaru (v1.8.1)."
                                     }
                                 } else {
-                                    updateCheckResult = "Aplikasi Anda versi 1.7.3 sudah menggunakan rilis resmi terbaru."
+                                    updateCheckResult = "Aplikasi Anda versi 1.8.1 sudah menggunakan rilis resmi terbaru."
                                 }
                             } catch (_: Exception) {
-                                updateCheckResult = "Versi Anda v1.7.3 adalah rilis resmi lapangan terbaru."
+                                updateCheckResult = "Versi Anda v1.8.1 adalah rilis resmi lapangan terbaru."
                             } finally {
                                 isCheckingUpdate = false
                             }
@@ -827,7 +933,7 @@ fun MoreScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "PETUGAS P2KD v1.7.3 (Official Release)",
+                text = "PETUGAS P2KD v1.8.1 (Official Release)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = White
