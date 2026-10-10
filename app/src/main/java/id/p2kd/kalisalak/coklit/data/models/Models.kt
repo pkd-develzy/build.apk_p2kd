@@ -319,6 +319,48 @@ data class VoterItem(
     val displayStatusCoklit: String get() = coklitStatus ?: "BELUM_COKLIT"
     val isSudahCoklit: Boolean get() = displayStatusCoklit == "SUDAH" || displayStatusCoklit == "COCOK" || displayStatusCoklit == "UBAH_DATA"
     val isTms: Boolean get() = status == "TMS" || statusAktif == "TMS" || displayStatusCoklit == "TMS"
+
+    val displayAge: Int
+        get() {
+            if (usia != null && usia > 0) return usia
+            val raw = (tanggalLahir ?: "").trim()
+            if (raw.isNotEmpty()) {
+                try {
+                    val parts = raw.split("-", "/")
+                    if (parts.size >= 3) {
+                        val year = if (parts[0].length == 4) parts[0].toIntOrNull() else parts[2].toIntOrNull()
+                        val month = if (parts[0].length == 4) parts[1].toIntOrNull() else parts[1].toIntOrNull()
+                        val day = if (parts[0].length == 4) parts[2].toIntOrNull() else parts[0].toIntOrNull()
+                        if (year != null && year in 1900..2026) {
+                            val cal = java.util.Calendar.getInstance()
+                            val curYear = cal.get(java.util.Calendar.YEAR)
+                            val curMonth = cal.get(java.util.Calendar.MONTH) + 1
+                            val curDay = cal.get(java.util.Calendar.DAY_OF_MONTH)
+                            var age = curYear - year
+                            if (month != null && day != null) {
+                                if (curMonth < month || (curMonth == month && curDay < day)) {
+                                    age--
+                                }
+                            }
+                            if (age >= 0) return age
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+            return 0
+        }
+
+    val displayStatusPerkawinan: String
+        get() {
+            val raw = statusPerkawinan?.trim()?.uppercase() ?: return "Belum Kawin"
+            return when {
+                raw == "S" || raw == "K" || raw.startsWith("KAWIN") -> "Kawin"
+                raw == "B" || raw == "BK" || raw.startsWith("BELUM") -> "Belum Kawin"
+                raw == "P" || raw == "CH" || raw.contains("CERAI HIDUP") || raw.contains("PERNAH") -> "Cerai Hidup"
+                raw == "CM" || raw.contains("CERAI MATI") -> "Cerai Mati"
+                else -> statusPerkawinan ?: "Belum Kawin"
+            }
+        }
 }
 
 data class VoterStageSummary(

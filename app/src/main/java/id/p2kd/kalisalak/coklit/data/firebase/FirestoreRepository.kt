@@ -26,7 +26,7 @@ object FirestoreRepository {
             "nik" to voter.nik,
             "nama" to voter.nama,
             "jenisKelamin" to voter.jenisKelamin,
-            "usia" to voter.usia,
+            "usia" to voter.displayAge,
             "alamat" to voter.alamat,
             "rt" to voter.rt,
             "rw" to voter.rw,
