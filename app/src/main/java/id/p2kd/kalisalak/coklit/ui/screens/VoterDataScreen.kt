@@ -34,6 +34,8 @@ enum class VoterGroup(val label: String, val stages: List<Pair<String, String>>)
 fun VoterDataScreen(
     onVoterClick: (VoterItem) -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val cacheManager = remember { id.p2kd.kalisalak.coklit.data.local.LocalVoterCacheManager(context) }
     val coroutineScope = rememberCoroutineScope()
     var selectedGroup by remember { mutableStateOf(VoterGroup.COKLIT) }
     var selectedStageKey by remember { mutableStateOf("CALON_DPS") }
@@ -47,11 +49,19 @@ fun VoterDataScreen(
     var totalCount by remember { mutableStateOf(0) }
     var selectedVoterDetail by remember { mutableStateOf<VoterItem?>(null) }
 
-    // Fetch data function
+    // Fetch data function (Offline-First)
     fun loadVoters() {
-        coroutineScope.launch {
+        // 1. Load instant cache if available
+        val cached = cacheManager.getCachedVoters(selectedStageKey)
+        if (cached != null && cached.first.isNotEmpty()) {
+            voterList = cached.first
+            totalCount = cached.second
+            isLoading = false
+        } else {
             isLoading = true
-            errorMessage = null
+        }
+
+        coroutineScope.launch {
             try {
                 val res = ApiClient.api.getVoters(
                     tahap = if (selectedStageKey == "SEMUA") null else selectedStageKey,
@@ -65,11 +75,15 @@ fun VoterDataScreen(
                     voterList = body.data
                     summary = body.summary
                     totalCount = body.total
-                } else {
+                    errorMessage = null
+                    cacheManager.saveVoters(selectedStageKey, body.data, body.total)
+                } else if (voterList.isEmpty()) {
                     errorMessage = res.body()?.message ?: "Gagal memuat daftar pemilih."
                 }
             } catch (e: Exception) {
-                errorMessage = "Koneksi bermasalah: " + (e.localizedMessage ?: e.message ?: "Silakan coba lagi")
+                if (voterList.isEmpty()) {
+                    errorMessage = "Koneksi bermasalah: " + (e.localizedMessage ?: e.message ?: "Silakan coba lagi")
+                }
             } finally {
                 isLoading = false
             }

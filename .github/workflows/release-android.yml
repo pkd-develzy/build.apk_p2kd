@@ -11,7 +11,7 @@ on:
       tag_name:
         description: 'Tag name for GitHub Release (e.g. v1.0.0)'
         required: false
-        default: 'v1.3.0'
+        default: 'v1.4.0'
 
 permissions:
   contents: write
@@ -122,8 +122,12 @@ jobs:
           fi
 
           cd app/build/outputs/apk/release
+          cp app-release.apk "PETUGAS P2KD.apk"
+          cp app-release.apk "PETUGAS_P2KD.apk"
+          sha256sum "PETUGAS P2KD.apk" > "PETUGAS P2KD.apk.sha256"
+          sha256sum "PETUGAS_P2KD.apk" > "PETUGAS_P2KD.apk.sha256"
           sha256sum app-release.apk > app-release.apk.sha256
-          SHA256=$(cat app-release.apk.sha256 | awk '{print $1}')
+          SHA256=$(cat "PETUGAS_P2KD.apk.sha256" | awk '{print $1}')
           echo "SHA-256 Checksum: $SHA256"
           echo "RELEASE_SHA256=$SHA256" >> $GITHUB_ENV
 
@@ -132,8 +136,10 @@ jobs:
         with:
           name: p2kd-native-apk-release
           path: |
+            app/build/outputs/apk/release/PETUGAS P2KD.apk
+            app/build/outputs/apk/release/PETUGAS_P2KD.apk
+            app/build/outputs/apk/release/PETUGAS_P2KD.apk.sha256
             app/build/outputs/apk/release/app-release.apk
-            app/build/outputs/apk/release/app-release.apk.sha256
           retention-days: 30
           if-no-files-found: error
 
@@ -149,7 +155,7 @@ jobs:
           fi
 
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then
-            TAG="v1.3.0"
+            TAG="v1.4.0"
           fi
 
           echo "Mempublikasikan GitHub Release untuk tag: $TAG"
@@ -179,14 +185,21 @@ jobs:
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG sudah ada, memperbarui file dan rilis..."
-            gh release edit "$TAG" --title "P2KD Coklit $TAG (Production Release)" --notes-file release_notes.md
-            gh release upload "$TAG" app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/app-release.apk.sha256 --clobber
+            gh release edit "$TAG" --title "PETUGAS P2KD $TAG (Production Release)" --notes-file release_notes.md
+            gh release upload "$TAG" \
+              "app/build/outputs/apk/release/PETUGAS P2KD.apk" \
+              "app/build/outputs/apk/release/PETUGAS_P2KD.apk" \
+              "app/build/outputs/apk/release/PETUGAS_P2KD.apk.sha256" \
+              app/build/outputs/apk/release/app-release.apk \
+              --clobber
           else
             echo "Membuat GitHub Release baru untuk tag $TAG..."
             gh release create "$TAG" \
+              "app/build/outputs/apk/release/PETUGAS P2KD.apk" \
+              "app/build/outputs/apk/release/PETUGAS_P2KD.apk" \
+              "app/build/outputs/apk/release/PETUGAS_P2KD.apk.sha256" \
               app/build/outputs/apk/release/app-release.apk \
-              app/build/outputs/apk/release/app-release.apk.sha256 \
-              --title "P2KD Coklit $TAG (Production Release)" \
+              --title "PETUGAS P2KD $TAG (Production Release)" \
               --notes-file release_notes.md
           fi
 

@@ -156,7 +156,7 @@ fun MoreScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "P2KD Coklit Mobile v1.3.0 (Official Release)",
+                text = "PETUGAS P2KD v1.4.0 (Official Release)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.outline
