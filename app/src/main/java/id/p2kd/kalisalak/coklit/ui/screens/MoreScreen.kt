@@ -286,7 +286,7 @@ fun MoreScreen(
                             isUpdatingPhoto = true
                             photoError = null
                             try {
-                                val res = ApiClient.api.updateProfilePhoto(ProfilePhotoRequest(photoUrl = photoUrlInput.trim()))
+                                val res = ApiClient.api.updateProfilePhoto(ProfilePhotoRequest(image = photoUrlInput.trim()))
                                 if (res.isSuccessful && res.body()?.success == true) {
                                     val updatedUser = user?.copy(fotoUrl = photoUrlInput.trim())
                                     if (updatedUser != null) {
