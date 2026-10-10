@@ -268,7 +268,7 @@ fun LoginScreen(
                                                 ?: "Gagal login. Periksa username dan kata sandi."
                                         }
                                     } catch (e: Exception) {
-                                        errorMessage = "Gagal terhubung: "
+                                        errorMessage = "Gagal terhubung ke database: " + (e.localizedMessage ?: "Periksa koneksi internet Anda.")
                                     } finally {
                                         isLoading = false
                                     }

@@ -255,7 +255,7 @@ fun CameraScanScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Kamera Belakang â€¢ P2KD Kalisalak",
+                    text = "Kamera Belakang • P2KD Kalisalak",
                     style = MaterialTheme.typography.labelSmall,
                     color = Blue400
                 )

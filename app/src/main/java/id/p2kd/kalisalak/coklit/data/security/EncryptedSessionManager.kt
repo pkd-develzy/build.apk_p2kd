@@ -27,7 +27,7 @@ class EncryptedSessionManager(context: Context) {
         private const val KEY_AUTH_TOKEN = "auth_jwt_token"
         private const val KEY_USER_PROFILE = "user_profile_json"
         private const val KEY_SERVER_URL = "server_base_url"
-        const val DEFAULT_SERVER_URL = "https://www.p2kdkalisalak.my.id"
+        const val DEFAULT_SERVER_URL = "https://p2kdkalisalak.my.id"
     }
 
     fun saveSession(token: String, profile: UserProfile) {

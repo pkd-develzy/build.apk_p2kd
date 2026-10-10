@@ -50,6 +50,8 @@ object ApiClient {
 
                 if (!token.isNullOrBlank()) {
                     requestBuilder.header("Authorization", "Bearer $token")
+                    requestBuilder.header("X-Authorization", "Bearer $token")
+                    requestBuilder.header("X-App-Token", token)
                 }
 
                 chain.proceed(requestBuilder.build())
@@ -62,6 +64,8 @@ object ApiClient {
             val okHttpClient = OkHttpClient.Builder()
                 .addInterceptor(authInterceptor)
                 .addInterceptor(loggingInterceptor)
+                .followRedirects(true)
+                .followSslRedirects(true)
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)

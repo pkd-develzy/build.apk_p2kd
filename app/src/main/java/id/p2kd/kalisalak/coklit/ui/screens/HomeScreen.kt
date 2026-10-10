@@ -51,17 +51,23 @@ fun HomeScreen(
         )
     }
     var isRefreshing by remember { mutableStateOf(false) }
+    var taskErrorMessage by remember { mutableStateOf<String?>(null) }
 
     fun refreshTasks() {
         coroutineScope.launch {
             isRefreshing = true
+            taskErrorMessage = null
             try {
                 val api = ApiClient.getService(sessionManager)
                 val res = api.getTasks(userProfile?.assignedRw, userProfile?.assignedTps)
                 if (res.isSuccessful && res.body()?.success == true) {
                     summary = res.body()!!.summary
+                    taskErrorMessage = null
+                } else {
+                    taskErrorMessage = res.body()?.message ?: "Gagal memuat data server (Kode ${res.code()})"
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                taskErrorMessage = "Koneksi terganggu: ${e.localizedMessage ?: "Silakan periksa jaringan"}"
             } finally {
                 isRefreshing = false
             }
@@ -98,13 +104,28 @@ fun HomeScreen(
                     )
                 }
 
-                IconButton(
-                    onClick = onNavigateToProfile,
-                    modifier = Modifier
-                        .size(42.dp)
-                        .background(Navy800, CircleShape)
-                ) {
-                    Icon(Icons.Default.AccountCircle, contentDescription = "Profil", tint = Amber400)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { refreshTasks() },
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(Navy800, CircleShape)
+                    ) {
+                        if (isRefreshing) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Blue400, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Refresh, contentDescription = "Muat Ulang", tint = Blue400)
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onNavigateToProfile,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(Navy800, CircleShape)
+                    ) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profil", tint = Amber400)
+                    }
                 }
             }
         }
@@ -117,6 +138,44 @@ fun HomeScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            // Error Banner (Jika koneksi ke database bermasalah)
+            if (taskErrorMessage != null) {
+                Surface(
+                    color = Rose600.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Rose500),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Koneksi Database",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Rose500,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = taskErrorMessage!!,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = White
+                            )
+                        }
+                        Button(
+                            onClick = { refreshTasks() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Rose600),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Coba Lagi", fontSize = 12.sp, color = White)
+                        }
+                    }
+                }
+            }
+
             // 1. Wilayah Penugasan Card
             Surface(
                 color = Navy900,
@@ -144,7 +203,7 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Kalisalak â€¢ ${userProfile?.assignedRw ?: "Semua RW"}",
+                            text = "Kalisalak • ${userProfile?.assignedRw ?: "Semua RW"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Slate400
                         )
