@@ -254,7 +254,7 @@ fun VoterDataScreen(
                             border = androidx.compose.foundation.BorderStroke(1.dp, Emerald500),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(copyNotice!!, fontSize = 11.sp, color = Emerald300, modifier = Modifier.padding(8.dp))
+                            Text(copyNotice!!, fontSize = 11.sp, color = Emerald400, modifier = Modifier.padding(8.dp))
                         }
                     }
 
