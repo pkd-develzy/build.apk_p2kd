@@ -194,7 +194,7 @@ fun MoreScreen(
                     modifier = Modifier.size(52.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Pin, contentDescription = null, tint = Blue600, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.Password, contentDescription = null, tint = Blue600, modifier = Modifier.size(28.dp))
                     }
                 }
             },

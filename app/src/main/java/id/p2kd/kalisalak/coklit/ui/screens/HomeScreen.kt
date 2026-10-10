@@ -34,28 +34,29 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
-    onNavigateToTasks: () -> Unit,
-    onNavigateToScan: () -> Unit,
-    onNavigateToKkList: () -> Unit,
-    onNavigateToSync: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    sessionManager: EncryptedSessionManager? = null,
+    offlineQueue: OfflineQueueManager? = null,
+    onNavigateToTasks: () -> Unit = {},
+    onNavigateToScan: () -> Unit = {},
+    onNavigateToKkList: () -> Unit = {},
+    onNavigateToSync: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     onNavigateToRegisteredHouses: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val sessionManager = remember { EncryptedSessionManager(context) }
-    val offlineManager = remember { OfflineQueueManager(context) }
+    val actualSessionManager = remember { sessionManager ?: EncryptedSessionManager(context) }
+    val actualOfflineManager = remember { offlineQueue ?: OfflineQueueManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    val userProfile = remember { sessionManager.getUserProfile() }
-    val queueItems by offlineManager.queueFlow.collectAsState(initial = emptyList())
+    val userProfile = remember { actualSessionManager.getUserProfile() }
+    val queueItems by actualOfflineManager.queueFlow.collectAsState(initial = emptyList())
     val pendingSyncCount = queueItems.count { it.syncState != id.p2kd.kalisalak.coklit.data.models.SyncState.SYNCED }
 
     var summary by remember {
         mutableStateOf(
             TaskSummary(
-                totalTugas = 0,
-                selesai = 0,
-                belumSelesai = 0,
+                totalRumah = 0,
+                selesaiRumah = 0,
                 perluFollowUp = 0,
                 stikerTersedia = 1300,
                 totalPemilihWilayah = 7787

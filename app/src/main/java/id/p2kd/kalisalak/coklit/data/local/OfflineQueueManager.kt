@@ -18,6 +18,7 @@ class OfflineQueueManager(context: Context) {
 
     private val _itemsFlow = MutableStateFlow<List<OfflineQueueItem>>(emptyList())
     val itemsFlow: StateFlow<List<OfflineQueueItem>> = _itemsFlow.asStateFlow()
+    val queueFlow: StateFlow<List<OfflineQueueItem>> get() = itemsFlow
 
     init {
         loadItems()

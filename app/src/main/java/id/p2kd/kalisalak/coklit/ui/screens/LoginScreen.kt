@@ -750,7 +750,7 @@ fun LoginScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Blue600)
                             ) {
-                                Icon(Icons.Default.Pin, contentDescription = null, tint = Blue600, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Password, contentDescription = null, tint = Blue600, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Masuk dengan PIN Cepat", color = Blue600, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }

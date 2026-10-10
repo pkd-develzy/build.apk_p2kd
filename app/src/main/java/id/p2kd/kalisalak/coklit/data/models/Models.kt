@@ -23,6 +23,8 @@ data class UserProfile(
 ) {
     val wilayah: String get() = assignedRw
     val tps: String get() = assignedTps
+    val rw: String get() = assignedRw
+    val nik: String get() = username
 }
 
 data class LoginResponse(
@@ -222,7 +224,11 @@ data class TaskSummary(
     @SerializedName("perluFollowUp") val perluFollowUp: Int = 0,
     @SerializedName("stikerTersedia") val stikerTersedia: Int = 0,
     @SerializedName("totalPemilihWilayah") val totalPemilihWilayah: Int = 0
-)
+) {
+    val totalTugas: Int get() = totalRumah
+    val selesai: Int get() = selesaiRumah
+    val belumSelesai: Int get() = perluFollowUp
+}
 
 data class UnassignedQrItem(
     @SerializedName("id") val id: String,
@@ -563,4 +569,10 @@ data class BroadcastBannerResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("hasActiveBanner") val hasActiveBanner: Boolean = false,
     @SerializedName("banner") val banner: BroadcastBannerItem? = null
+)
+
+
+data class ChangePasswordResponse(
+    @SerializedName("success") val success: Boolean = true,
+    @SerializedName("message") val message: String = ""
 )

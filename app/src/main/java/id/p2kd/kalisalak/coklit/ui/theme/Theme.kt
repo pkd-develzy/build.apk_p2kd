@@ -1,3 +1,4 @@
+import androidx.compose.ui.graphics.Color
 package id.p2kd.kalisalak.coklit.ui.theme
 
 import androidx.compose.material3.MaterialTheme

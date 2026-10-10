@@ -104,7 +104,7 @@ interface ApiService {
     @POST("api/app/auth/change-password")
     suspend fun changePassword(
         @Body request: ChangePasswordRequest
-    ): Response<Map<String, Any>>
+    ): Response<ChangePasswordResponse>
 
     // Unggah / Ganti Foto Profil
     @POST("api/app/auth/profile-photo")
