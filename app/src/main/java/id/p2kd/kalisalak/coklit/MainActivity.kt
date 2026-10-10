@@ -223,7 +223,7 @@ private fun PermissionRequirementRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Surface(
-            color = Blue500.copy(alpha = 0.2f),
+            color = Blue600.copy(alpha = 0.2f),
             shape = CircleShape,
             modifier = Modifier.size(36.dp)
         ) {

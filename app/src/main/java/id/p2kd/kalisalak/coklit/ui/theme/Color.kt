@@ -10,6 +10,7 @@ val Navy700 = Color(0xFF334155)
 val Blue900 = Color(0xFF1E3A8A)
 val Blue800 = Color(0xFF1E40AF)
 val Blue600 = Color(0xFF2563EB)
+val Blue500 = Color(0xFF3B82F6)
 val Blue400 = Color(0xFF60A5FA)
 
 val Cyan400 = Color(0xFF22D3EE)
