@@ -129,7 +129,7 @@ fun LoginScreen(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.5f))
                     ) {
                         Text(
-                            text = "v1.6.0",
+                            text = "v1.7.3",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Blue300,

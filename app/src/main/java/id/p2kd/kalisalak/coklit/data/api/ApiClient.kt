@@ -47,6 +47,7 @@ object ApiClient {
                 val requestBuilder = original.newBuilder()
                     .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
+                    .header("X-App-Version", "1.7.3")
 
                 if (!token.isNullOrBlank()) {
                     requestBuilder.header("Authorization", "Bearer $token")

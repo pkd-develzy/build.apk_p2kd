@@ -59,9 +59,47 @@ fun MoreScreen(
     var showUpdateCheckDialog by remember { mutableStateOf(false) }
     var updateCheckResult by remember { mutableStateOf<String?>(null) }
     var isCheckingUpdate by remember { mutableStateOf(false) }
+    var showDataSyncConfirmDialog by remember { mutableStateOf(false) }
 
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
     val queueCount = remember { offlineQueue.getQueue().size }
+
+    // DIALOG KONFIRMASI AKSES DATA SELULER (CACHE SYNC)
+    if (showDataSyncConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDataSyncConfirmDialog = false },
+            icon = { Icon(Icons.Default.CloudDownload, contentDescription = null, tint = Blue400, modifier = Modifier.size(28.dp)) },
+            title = { Text("Konfirmasi Akses Data Seluler", fontWeight = FontWeight.Bold, color = White) },
+            text = {
+                Text(
+                    "Aplikasi akan mengunduh basis data pemilih terbaru (±2-3 MB) dari server resmi untuk disimpan ke cache offline smartphone Anda.\n\n" +
+                    "Pastikan koneksi internet / data seluler Anda aktif. Lanjutkan pengunduhan?",
+                    color = Slate300,
+                    fontSize = 12.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDataSyncConfirmDialog = false
+                        val cacheManager = LocalVoterCacheManager(context)
+                        cacheManager.clearCache()
+                        Toast.makeText(context, "Cache dibersihkan. Mengunduh data terbaru via internet...", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Lanjutkan Unduh", color = White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDataSyncConfirmDialog = false }) {
+                    Text("Batal", color = Slate400)
+                }
+            },
+            containerColor = Navy900
+        )
+    }
 
     // DIALOG 1: Ganti Kata Sandi Akun
     if (showPasswordDialog) {
@@ -219,7 +257,7 @@ fun MoreScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Masukkan URL foto resmi Anda (Cloudinary / Web):", fontSize = 12.sp, color = Slate300)
+                    Text("Foto resmi Anda akan diunggah ke cloud storage P2KD Kalisalak melalui jaringan seluler. Pastikan ukuran foto wajar (< 2 MB):", fontSize = 12.sp, color = Slate300)
 
                     if (photoError != null) {
                         Surface(
@@ -340,7 +378,7 @@ fun MoreScreen(
                         }
                     } else {
                         Text(
-                            text = updateCheckResult ?: "Aplikasi Anda versi 1.6.0 sudah menggunakan versi resmi paling mutakhir.",
+                            text = updateCheckResult ?: "Aplikasi Anda versi 1.7.3 sudah menggunakan versi resmi paling mutakhir.",
                             fontSize = 13.sp,
                             color = Slate300
                         )
@@ -665,7 +703,7 @@ fun MoreScreen(
                     )
                     SystemStatusBox(
                         title = "Versi Sistem",
-                        value = "v1.6.0 (Build 9)",
+                        value = "v1.7.3 (Build 10)",
                         icon = Icons.Default.CheckCircle,
                         accentColor = Indigo400,
                         modifier = Modifier.weight(1f),
@@ -674,19 +712,19 @@ fun MoreScreen(
                                 showUpdateCheckDialog = true
                                 isCheckingUpdate = true
                                 try {
-                                    val res = ApiClient.api.checkAppVersion("1.6.0")
+                                    val res = ApiClient.api.checkAppVersion("1.7.3")
                                     if (res.isSuccessful && res.body()?.success == true) {
                                         val status = res.body()!!.updateStatus
                                         updateCheckResult = if (status?.updateAvailable == true) {
                                             "Tersedia versi baru: " + status.latestVersion + ". Silakan unduh melalui notifikasi."
                                         } else {
-                                            "Aplikasi Anda sudah versi resmi terbaru (v1.6.0)."
+                                            "Aplikasi Anda sudah versi resmi terbaru (v1.7.3)."
                                         }
                                     } else {
-                                        updateCheckResult = "Aplikasi Anda versi 1.6.0 sudah menggunakan rilis resmi terbaru."
+                                        updateCheckResult = "Aplikasi Anda versi 1.7.3 sudah menggunakan rilis resmi terbaru."
                                     }
                                 } catch (_: Exception) {
-                                    updateCheckResult = "Versi Anda v1.6.0 adalah rilis resmi lapangan terbaru."
+                                    updateCheckResult = "Versi Anda v1.7.3 adalah rilis resmi lapangan terbaru."
                                 } finally {
                                     isCheckingUpdate = false
                                 }
@@ -710,11 +748,7 @@ fun MoreScreen(
                     iconTint = Amber400,
                     title = "Bersihkan Cache & Refresh Data",
                     subtitle = "Menyegarkan data lokal langsung dari server",
-                    onClick = {
-                        val cacheManager = LocalVoterCacheManager(context)
-                        cacheManager.clearCache()
-                        Toast.makeText(context, "Cache pemilih dibersihkan. Memuat ulang dari server...", Toast.LENGTH_SHORT).show()
-                    }
+                    onClick = { showDataSyncConfirmDialog = true }
                 )
                 HorizontalDivider(color = Slate800, thickness = 1.dp)
                 MoreMenuItem(
@@ -743,19 +777,19 @@ fun MoreScreen(
                             showUpdateCheckDialog = true
                             isCheckingUpdate = true
                             try {
-                                val res = ApiClient.api.checkAppVersion("1.6.0")
+                                val res = ApiClient.api.checkAppVersion("1.7.3")
                                 if (res.isSuccessful && res.body()?.success == true) {
                                     val status = res.body()!!.updateStatus
                                     updateCheckResult = if (status?.updateAvailable == true) {
                                         "Tersedia versi baru: " + status.latestVersion
                                     } else {
-                                        "Aplikasi Anda sudah versi resmi terbaru (v1.6.0)."
+                                        "Aplikasi Anda sudah versi resmi terbaru (v1.7.3)."
                                     }
                                 } else {
-                                    updateCheckResult = "Aplikasi Anda versi 1.6.0 sudah menggunakan rilis resmi terbaru."
+                                    updateCheckResult = "Aplikasi Anda versi 1.7.3 sudah menggunakan rilis resmi terbaru."
                                 }
                             } catch (_: Exception) {
-                                updateCheckResult = "Versi Anda v1.6.0 adalah rilis resmi lapangan terbaru."
+                                updateCheckResult = "Versi Anda v1.7.3 adalah rilis resmi lapangan terbaru."
                             } finally {
                                 isCheckingUpdate = false
                             }
@@ -804,7 +838,7 @@ fun MoreScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "PETUGAS P2KD v1.6.0 (Official Release)",
+                text = "PETUGAS P2KD v1.7.3 (Official Release)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = White

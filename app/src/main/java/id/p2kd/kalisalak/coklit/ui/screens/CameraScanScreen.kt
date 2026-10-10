@@ -91,6 +91,10 @@ fun CameraScanScreen(
 
     fun parseQrToken(rawText: String): String {
         val trimmed = rawText.trim()
+        val regexMatch = Regex("""KLK-HM-\d{2}-[A-Za-z0-9]+""", RegexOption.IGNORE_CASE).find(trimmed)
+        if (regexMatch != null) {
+            return regexMatch.value.uppercase()
+        }
         // If scanned full URL e.g. https://.../stiker-coklit?qr=KLK-HM-01-A1B2
         if (trimmed.contains("qr=")) {
             val queryParam = trimmed.substringAfter("qr=").substringBefore("&")

@@ -97,31 +97,88 @@ fun AppNavigation() {
         }
 
         composable("scan") {
-            CameraScanScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onManualInputClick = { navController.navigate("tasks") },
-                onQrScanned = { rawToken ->
-                    coroutineScope.launch {
-                        try {
-                            val res = ApiClient.api.lookupQr(rawToken.trim())
-                            if (res.isSuccessful && res.body()?.valid == true) {
-                                val lookup = res.body()!!
-                                if (lookup.rumah != null) {
-                                    navController.navigate("kk_list/" + lookup.rumah.id) {
-                                        popUpTo("scan") { inclusive = true }
+            var isCheckingQr by remember { mutableStateOf(false) }
+            var invalidQrDialog by remember { mutableStateOf<String?>(null) }
+
+            if (invalidQrDialog != null) {
+                AlertDialog(
+                    onDismissRequest = { invalidQrDialog = null },
+                    icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Amber400) },
+                    title = { Text("QR Code Tidak Terdaftar", fontWeight = FontWeight.Bold, color = White) },
+                    text = { Text(invalidQrDialog!!, color = Slate300, fontSize = 13.sp) },
+                    confirmButton = {
+                        Button(
+                            onClick = { invalidQrDialog = null },
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue600)
+                        ) {
+                            Text("Pindai Ulang", color = White)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            invalidQrDialog = null
+                            navController.navigate("tasks")
+                        }) {
+                            Text("Input Manual", color = Slate400)
+                        }
+                    },
+                    containerColor = Navy900
+                )
+            }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                CameraScanScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onManualInputClick = { navController.navigate("tasks") },
+                    onQrScanned = { rawToken ->
+                        coroutineScope.launch {
+                            isCheckingQr = true
+                            try {
+                                val token = rawToken.trim()
+                                val res = ApiClient.api.lookupQr(token)
+                                if (res.isSuccessful && res.body()?.valid == true) {
+                                    val lookup = res.body()!!
+                                    if (lookup.rumah != null) {
+                                        navController.navigate("kk_list/" + lookup.rumah.id) {
+                                            popUpTo("scan") { inclusive = true }
+                                        }
+                                    } else {
+                                        val qrId = lookup.qr?.id ?: ""
+                                        val qrToken = lookup.qr?.qrToken ?: token
+                                        navController.navigate("house_form/" + qrId + "/" + qrToken) {
+                                            popUpTo("scan") { inclusive = true }
+                                        }
                                     }
                                 } else {
-                                    val qrId = lookup.qr?.id ?: ""
-                                    val token = lookup.qr?.qrToken ?: rawToken
-                                    navController.navigate("house_form/" + qrId + "/" + token) {
-                                        popUpTo("scan") { inclusive = true }
-                                    }
+                                    val errorMsg = res.body()?.message ?: "QR Code '$token' tidak terdaftar dalam database resmi P2KD Kalisalak. Pastikan menggunakan stiker resmi panitia."
+                                    invalidQrDialog = errorMsg
                                 }
+                            } catch (e: Exception) {
+                                invalidQrDialog = "Koneksi terganggu saat memverifikasi stiker: " + (e.localizedMessage ?: "Silakan periksa jaringan internet Anda.")
+                            } finally {
+                                isCheckingQr = false
                             }
-                        } catch (_: Exception) {}
+                        }
+                    }
+                )
+
+                if (isCheckingQr) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Slate950.copy(alpha = 0.75f)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator(color = Blue400)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Memverifikasi Stiker QR Resmi...", color = White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
                     }
                 }
-            )
+            }
         }
 
         composable(
@@ -286,7 +343,7 @@ fun MainContainerScreen(
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.5f))
                                 ) {
                                     Text(
-                                        text = "v1.6.0",
+                                        text = "v1.7.3",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Blue300,
