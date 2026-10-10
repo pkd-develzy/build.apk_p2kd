@@ -253,7 +253,7 @@ fun NotificationCenterScreen(
                             )
                         ) {
                             Text(
-                                text = if (hasNewUpdate) "Rilis Baru: v" + (updateInfo?.latestVersion ?: "") else "Versi Terkini",
+                                text = if (hasNewUpdate) "Rilis Baru: v" + (updateInfo?.newVersion ?: "") else "Versi Terkini",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (hasNewUpdate) Color(0xFFB45309) else Color(0xFF15803D),
@@ -265,7 +265,7 @@ fun NotificationCenterScreen(
                     if (updateInfo?.hasUpdate == true) {
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Tersedia pembaruan aplikasi resmi v" + (updateInfo?.latestVersion ?: "") + " dengan optimalisasi mutasi 13 RW dan sistem keamanan berlapis.",
+                            text = "Tersedia pembaruan aplikasi resmi v" + (updateInfo?.newVersion ?: "") + " dengan optimalisasi mutasi 13 RW dan sistem keamanan berlapis.",
                             fontSize = 11.sp,
                             color = Color(0xFF475569),
                             lineHeight = 16.sp
