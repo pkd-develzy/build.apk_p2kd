@@ -30,6 +30,10 @@ class LocalVoterCacheManager(context: Context) {
         }
     }
 
+    fun clearCache() {
+        prefs.edit().clear().apply()
+    }
+
     fun searchCached(stageKey: String, query: String): List<VoterItem> {
         val cached = getCachedVoters(stageKey)?.first ?: return emptyList()
         val clean = query.trim().lowercase()

@@ -111,13 +111,32 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "PETUGAS P2KD",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = White,
-                    fontWeight = FontWeight.Black,
-                    textAlign = TextAlign.Center
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "PETUGAS P2KD",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = White,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Blue600.copy(alpha = 0.25f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = "v1.6.0",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Blue300,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
 
                 Text(
                     text = "Aplikasi Operasional Coklit Pemilih Pilkades Kalisalak",

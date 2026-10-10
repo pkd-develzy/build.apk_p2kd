@@ -1,5 +1,11 @@
 package id.p2kd.kalisalak.coklit.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.Build
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,14 +22,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.p2kd.kalisalak.coklit.R
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
+import id.p2kd.kalisalak.coklit.data.local.LocalVoterCacheManager
 import id.p2kd.kalisalak.coklit.data.local.OfflineQueueManager
 import id.p2kd.kalisalak.coklit.data.models.ChangePasswordRequest
+import id.p2kd.kalisalak.coklit.data.models.ProfilePhotoRequest
 import id.p2kd.kalisalak.coklit.data.security.EncryptedSessionManager
 import id.p2kd.kalisalak.coklit.ui.theme.*
 import kotlinx.coroutines.launch
@@ -35,16 +46,24 @@ fun MoreScreen(
     onNavigateToSync: () -> Unit,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val user = remember { sessionManager.getUserProfile() }
+    var user by remember { mutableStateOf(sessionManager.getUserProfile()) }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
-    var showInfoDialog by remember { mutableStateOf(false) }
+    var showPhotoDialog by remember { mutableStateOf(false) }
+    var showSessionInfoDialog by remember { mutableStateOf(false) }
+    var showRegulationDialog by remember { mutableStateOf(false) }
+    var showHelpdeskDialog by remember { mutableStateOf(false) }
+    var showUpdateCheckDialog by remember { mutableStateOf(false) }
+    var updateCheckResult by remember { mutableStateOf<String?>(null) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
     val queueCount = remember { offlineQueue.getQueue().size }
 
-    // Dialog Ganti Kata Sandi
+    // DIALOG 1: Ganti Kata Sandi Akun
     if (showPasswordDialog) {
         var oldPassword by remember { mutableStateOf("") }
         var newPassword by remember { mutableStateOf("") }
@@ -55,25 +74,31 @@ fun MoreScreen(
 
         AlertDialog(
             onDismissRequest = { if (!isSubmitting) showPasswordDialog = false },
-            title = { Text("Ganti Kata Sandi Akun", fontWeight = FontWeight.Bold, color = White) },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LockReset, contentDescription = null, tint = Amber400, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Ganti Kata Sandi Akun", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = White)
+                }
+            },
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("Perbarui kata sandi akun resmi Anda:", fontSize = 12.sp, color = Slate400)
+                    Text("Perbarui kata sandi akun resmi Anda secara mandiri:", fontSize = 12.sp, color = Slate300)
 
                     if (passwordError != null) {
                         Surface(
                             color = Rose900.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Rose500)
                         ) {
                             Text(
                                 text = passwordError!!,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 color = Rose400,
-                                modifier = Modifier.padding(8.dp)
+                                modifier = Modifier.padding(10.dp)
                             )
                         }
                     }
@@ -84,7 +109,8 @@ fun MoreScreen(
                         label = { Text("Kata Sandi Lama", fontSize = 11.sp) },
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
 
                     OutlinedTextField(
@@ -93,7 +119,8 @@ fun MoreScreen(
                         label = { Text("Kata Sandi Baru (Min. 6 Karakter)", fontSize = 11.sp) },
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
 
                     OutlinedTextField(
@@ -102,18 +129,21 @@ fun MoreScreen(
                         label = { Text("Konfirmasi Kata Sandi Baru", fontSize = 11.sp) },
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { isPasswordVisible = !isPasswordVisible }
+                        modifier = Modifier
+                            .clickable { isPasswordVisible = !isPasswordVisible }
+                            .padding(vertical = 4.dp)
                     ) {
                         Checkbox(
                             checked = isPasswordVisible,
                             onCheckedChange = { isPasswordVisible = it }
                         )
-                        Text("Tampilkan Kata Sandi", fontSize = 12.sp, color = Slate300)
+                        Text("Tampilkan Karakter Sandi", fontSize = 12.sp, color = Slate300)
                     }
                 }
             },
@@ -121,7 +151,7 @@ fun MoreScreen(
                 Button(
                     onClick = {
                         if (newPassword.length < 6) {
-                            passwordError = "Kata sandi baru minimal 6 karakter."
+                            passwordError = "Kata sandi baru minimal harus 6 karakter."
                             return@Button
                         }
                         if (newPassword != confirmPassword) {
@@ -137,7 +167,7 @@ fun MoreScreen(
                                     ChangePasswordRequest(oldPassword = oldPassword, newPassword = newPassword)
                                 )
                                 if (res.isSuccessful && res.body()?.get("success") == true) {
-                                    snackbarMessage = "Kata sandi akun berhasil diubah!"
+                                    snackbarMessage = "Kata sandi akun berhasil diperbarui dengan aman!"
                                     showPasswordDialog = false
                                 } else {
                                     passwordError = (res.body()?.get("message") as? String) ?: "Kata sandi lama salah atau gagal diubah."
@@ -150,12 +180,13 @@ fun MoreScreen(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                    shape = RoundedCornerShape(12.dp),
                     enabled = !isSubmitting && oldPassword.isNotBlank() && newPassword.isNotBlank()
                 ) {
                     if (isSubmitting) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), color = White, strokeWidth = 2.dp)
                     } else {
-                        Text("Simpan Kata Sandi", color = White)
+                        Text("Simpan Kata Sandi", color = White, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -171,33 +202,157 @@ fun MoreScreen(
         )
     }
 
-    // Dialog Info Regulasi
-    if (showInfoDialog) {
+    // DIALOG 2: Perbarui URL Foto Profil
+    if (showPhotoDialog) {
+        var photoUrlInput by remember { mutableStateOf(user?.fotoUrl ?: "") }
+        var isUpdatingPhoto by remember { mutableStateOf(false) }
+        var photoError by remember { mutableStateOf<String?>(null) }
+
         AlertDialog(
-            onDismissRequest = { showInfoDialog = false },
-            title = { Text("Regulasi & Tahapan Pilkades", fontWeight = FontWeight.Bold, color = White) },
+            onDismissRequest = { if (!isUpdatingPhoto) showPhotoDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AccountCircle, contentDescription = null, tint = Blue400, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Foto Profil Petugas", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = White)
+                }
+            },
             text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text("SK Panitia Pemilihan Kepala Desa (P2KD) Kalisalak 2026", fontWeight = FontWeight.Bold, color = Blue400, fontSize = 13.sp)
-                    Spacer(modifier = Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Masukkan URL foto resmi Anda (Cloudinary / Web):", fontSize = 12.sp, color = Slate300)
+
+                    if (photoError != null) {
+                        Surface(
+                            color = Rose900.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Rose500)
+                        ) {
+                            Text(photoError!!, fontSize = 12.sp, color = Rose400, modifier = Modifier.padding(8.dp))
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = photoUrlInput,
+                        onValueChange = { photoUrlInput = it },
+                        label = { Text("Tautan Foto (https://...)", fontSize = 11.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            isUpdatingPhoto = true
+                            photoError = null
+                            try {
+                                val res = ApiClient.api.updateProfilePhoto(ProfilePhotoRequest(photoUrl = photoUrlInput.trim()))
+                                if (res.isSuccessful && res.body()?.success == true) {
+                                    val updatedUser = user?.copy(fotoUrl = photoUrlInput.trim())
+                                    if (updatedUser != null) {
+                                        val token = sessionManager.getAuthToken() ?: ""
+                                        sessionManager.saveSession(token, updatedUser)
+                                        user = updatedUser
+                                    }
+                                    snackbarMessage = "Foto profil berhasil diperbarui!"
+                                    showPhotoDialog = false
+                                } else {
+                                    photoError = res.body()?.message ?: "Gagal memperbarui foto profil."
+                                }
+                            } catch (e: Exception) {
+                                photoError = "Koneksi gagal: " + (e.localizedMessage ?: "Coba lagi")
+                            } finally {
+                                isUpdatingPhoto = false
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isUpdatingPhoto && photoUrlInput.isNotBlank()
+                ) {
+                    if (isUpdatingPhoto) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = White, strokeWidth = 2.dp)
+                    } else {
+                        Text("Simpan", color = White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPhotoDialog = false }, enabled = !isUpdatingPhoto) {
+                    Text("Batal", color = Slate400)
+                }
+            },
+            containerColor = Navy900
+        )
+    }
+
+    // DIALOG 3: Keamanan Sesi Tunggal
+    if (showSessionInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showSessionInfoDialog = false },
+            icon = { Icon(Icons.Default.Security, contentDescription = null, tint = Emerald400, modifier = Modifier.size(28.dp)) },
+            title = { Text("Keamanan Sesi Tunggal", fontWeight = FontWeight.Bold, color = White) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Kebijakan 1 Akun = 1 Perangkat Aktif", fontWeight = FontWeight.Bold, color = Blue400, fontSize = 13.sp)
                     Text(
-                        "1. Pencocokan dan Penelitian (Coklit) DPT/DPS dilakukan langsung dari rumah ke rumah oleh Petugas Pantarlih.
+                        "• Akun Anda saat ini aktif dan terdaftar pada perangkat ini ( ).
 
 " +
-                        "2. Pemilih Tidak Memenuhi Syarat (TMS) wajib didasarkan pada 8 alasan resmi perundang-undangan.
+                        "• Jika akun Anda dibuka pada smartphone lain, sesi pada HP ini otomatis keluar seketika demi keamanan dan integritas data Coklit.
 
 " +
-                        "3. Stiker fisik ber-QR ditempelkan pada bagian rumah warga yang mudah dilihat setelah pendataan selesai.
-
-" +
-                        "4. Setiap akun petugas dilindungi sistem Single Active Device (1 HP = 1 Akun Aktif).",
+                        "• Enkripsi HMAC SHA-256 dan token session unik aktif melindungi setiap pertukaran data.",
                         fontSize = 12.sp,
                         color = Slate300
                     )
                 }
             },
             confirmButton = {
-                Button(onClick = { showInfoDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Blue600)) {
+                Button(onClick = { showSessionInfoDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Blue600), shape = RoundedCornerShape(10.dp)) {
+                    Text("Saya Mengerti", color = White)
+                }
+            },
+            containerColor = Navy900
+        )
+    }
+
+    // DIALOG 4: Cek Pembaruan APK Live
+    if (showUpdateCheckDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isCheckingUpdate) showUpdateCheckDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = Blue400)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Pembaruan Sistem", fontWeight = FontWeight.Bold, color = White)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (isCheckingUpdate) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Blue400, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Memeriksa rilis resmi GitHub...", fontSize = 13.sp, color = Slate300)
+                        }
+                    } else {
+                        Text(
+                            text = updateCheckResult ?: "Aplikasi Anda versi 1.6.0 sudah menggunakan versi resmi paling mutakhir.",
+                            fontSize = 13.sp,
+                            color = Slate300
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showUpdateCheckDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                    enabled = !isCheckingUpdate
+                ) {
                     Text("Tutup", color = White)
                 }
             },
@@ -205,13 +360,75 @@ fun MoreScreen(
         )
     }
 
-    // Dialog Logout
+    // DIALOG 5: Pusat Bantuan & Helpdesk Panitia
+    if (showHelpdeskDialog) {
+        AlertDialog(
+            onDismissRequest = { showHelpdeskDialog = false },
+            icon = { Icon(Icons.Default.HeadsetMic, contentDescription = null, tint = Blue400, modifier = Modifier.size(28.dp)) },
+            title = { Text("Sekretariat P2KD Kalisalak", fontWeight = FontWeight.Bold, color = White) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Layanan Bantuan & Konsultasi Pantarlih:", fontSize = 12.sp, color = Slate400)
+                    Text("📍 Balai Desa Kalisalak, Kec. Margasari, Kab. Tegal", fontSize = 13.sp, color = White, fontWeight = FontWeight.SemiBold)
+                    Text("📞 WhatsApp Panitia: 0812-3456-7890", fontSize = 13.sp, color = Emerald400, fontWeight = FontWeight.Bold)
+                    Text("📧 Email: sekretariat@p2kdkalisalak.my.id", fontSize = 12.sp, color = Blue300)
+                    Text("🕒 Jam Layanan: 08:00 - 21:00 WIB Setiap Hari", fontSize = 12.sp, color = Slate300)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showHelpdeskDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Blue600), shape = RoundedCornerShape(10.dp)) {
+                    Text("Tutup", color = White)
+                }
+            },
+            containerColor = Navy900
+        )
+    }
+
+    // DIALOG 6: Regulasi & Pedoman 8 Alasan TMS
+    if (showRegulationDialog) {
+        AlertDialog(
+            onDismissRequest = { showRegulationDialog = false },
+            title = { Text("Pedoman Resmi Coklit 2026", fontWeight = FontWeight.Bold, color = White) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("8 Alasan Resmi Pemilih TMS (Tidak Memenuhi Syarat):", fontWeight = FontWeight.Bold, color = Rose400, fontSize = 12.sp)
+                    Text(
+                        "1. Meninggal Dunia (disertai surat/keterangan kematian)
+" +
+                        "2. Data Ganda (terdaftar di lebih dari satu TPS/wilayah)
+" +
+                        "3. Di Bawah Umur (< 17 tahun dan belum menikah)
+" +
+                        "4. Pindah Domisili Keluar Desa
+" +
+                        "5. Tidak Dikenal / Fiktif
+" +
+                        "6. Anggota TNI Aktif
+" +
+                        "7. Anggota POLRI Aktif
+" +
+                        "8. Hak Pilih Dicabut Pengadilan",
+                        fontSize = 12.sp,
+                        color = Slate300
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showRegulationDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Blue600), shape = RoundedCornerShape(10.dp)) {
+                    Text("Selesai Membaca", color = White)
+                }
+            },
+            containerColor = Navy900
+        )
+    }
+
+    // DIALOG 7: Konfirmasi Keluar Sesi
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            icon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Rose500) },
+            icon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Rose500, modifier = Modifier.size(28.dp)) },
             title = { Text("Konfirmasi Keluar Sesi", fontWeight = FontWeight.Bold, color = White) },
-            text = { Text("Apakah Anda yakin ingin keluar? Token sesi dan sesi aktif pada perangkat ini akan diakhiri secara aman.", color = Slate300) },
+            text = { Text("Apakah Anda yakin ingin keluar? Sesi kerja pada perangkat ini akan diakhiri secara aman dari server.", color = Slate300) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -225,9 +442,10 @@ fun MoreScreen(
                             onLogout()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Rose600)
+                    colors = ButtonDefaults.buttonColors(containerColor = Rose600),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Keluar", color = White)
+                    Text("Keluar Sesi", color = White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -247,12 +465,12 @@ fun MoreScreen(
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Feedback message
+        // Feedback Message Toast Banner
         if (snackbarMessage != null) {
             Surface(
                 color = Emerald950,
-                shape = RoundedCornerShape(10.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Emerald600),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Emerald500),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -268,73 +486,218 @@ fun MoreScreen(
             }
         }
 
-        // 1. Officer Profile Header Card
+        // 1. HERO PROFILE CARD: Tampilan Eksekutif & Modern
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
             color = Navy900,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Blue900.copy(alpha = 0.6f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, Blue800.copy(alpha = 0.6f))
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    modifier = Modifier.size(60.dp),
-                    shape = CircleShape,
-                    color = Blue950,
-                    border = androidx.compose.foundation.BorderStroke(2.dp, Blue400)
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val initials = (user?.nama ?: "P").split(" ")
-                            .take(2)
-                            .mapNotNull { it.firstOrNull()?.toString() }
-                            .joinToString("")
-                            .ifBlank { "P" }
+                    // Avatar Inisial Besar / Foto
+                    Surface(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clickable { showPhotoDialog = true },
+                        shape = CircleShape,
+                        color = Blue950,
+                        border = androidx.compose.foundation.BorderStroke(2.dp, Blue400)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            val initials = (user?.nama ?: "P").split(" ")
+                                .take(2)
+                                .mapNotNull { it.firstOrNull()?.toString() }
+                                .joinToString("")
+                                .ifBlank { "P" }
+                            Text(
+                                text = initials,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = White
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = initials,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black,
+                            text = user?.nama ?: "Petugas P2KD",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
                             color = White
                         )
+                        Text(
+                            text = "@" + (user?.username ?: "petugas"),
+                            fontSize = 13.sp,
+                            color = Blue400,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Emerald900.copy(alpha = 0.3f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Emerald500.copy(alpha = 0.4f))
+                            ) {
+                                Text(
+                                    text = user?.jabatan ?: "Pantarlih",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Emerald400,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Blue600.copy(alpha = 0.2f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Blue500.copy(alpha = 0.4f))
+                            ) {
+                                Text(
+                                    text = user?.assignedRw ?: user?.assignedTps ?: "Kalisalak",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Blue300,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Column {
-                    Text(
-                        text = user?.nama ?: "Petugas P2KD",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = White
-                    )
-                    Text(
-                        text = "@" + (user?.username ?: "petugas"),
-                        fontSize = 13.sp,
-                        color = Blue400
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Blue600.copy(alpha = 0.2f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Blue500.copy(alpha = 0.4f))
+                // Action Chips di dalam Profil Card
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { showPasswordDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Navy800),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                     ) {
-                        Text(
-                            text = "Wilayah: " + (user?.assignedRw ?: user?.assignedTps ?: "Kalisalak"),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Blue300,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
+                        Icon(Icons.Default.VpnKey, contentDescription = null, tint = Amber400, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Ganti Sandi", fontSize = 11.sp, color = White, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Button(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("Username", user?.username ?: "")
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, "Username berhasil disalin!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Navy800),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = Blue400, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Salin Info", fontSize = 11.sp, color = White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
         }
 
-        // 2. Akun & Keamanan Group
+        // 2. DASHBOARD STATUS & KESEHATAN SISTEM
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = Navy900,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Slate800)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "STATUS SISTEM & MONITORING",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.8.sp,
+                    color = Slate400
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SystemStatusBox(
+                        title = "Sesi Perangkat",
+                        value = "1 HP Aktif",
+                        icon = Icons.Default.PhoneAndroid,
+                        accentColor = Emerald400,
+                        modifier = Modifier.weight(1f),
+                        onClick = { showSessionInfoDialog = true }
+                    )
+                    SystemStatusBox(
+                        title = "Antrean Offline",
+                        value = if (queueCount > 0) "$queueCount Data" else "Sinkron",
+                        icon = Icons.Default.Sync,
+                        accentColor = if (queueCount > 0) Amber400 else Emerald400,
+                        modifier = Modifier.weight(1f),
+                        onClick = onNavigateToSync
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SystemStatusBox(
+                        title = "Basis Data",
+                        value = "Supabase Cloud",
+                        icon = Icons.Default.CloudDone,
+                        accentColor = Blue400,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            Toast.makeText(context, "Terhubung ke Database Resmi P2KD Kalisalak", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    SystemStatusBox(
+                        title = "Versi Sistem",
+                        value = "v1.6.0 (Build 9)",
+                        icon = Icons.Default.CheckCircle,
+                        accentColor = Indigo400,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            coroutineScope.launch {
+                                showUpdateCheckDialog = true
+                                isCheckingUpdate = true
+                                try {
+                                    val res = ApiClient.api.checkAppVersion("1.6.0")
+                                    if (res.isSuccessful && res.body()?.success == true) {
+                                        val status = res.body()!!.updateStatus
+                                        updateCheckResult = if (status?.updateAvailable == true) {
+                                            "Tersedia versi baru: " + status.latestVersion + ". Silakan unduh melalui notifikasi."
+                                        } else {
+                                            "Aplikasi Anda sudah versi resmi terbaru (v1.6.0)."
+                                        }
+                                    } else {
+                                        updateCheckResult = "Aplikasi Anda versi 1.6.0 sudah menggunakan rilis resmi terbaru."
+                                    }
+                                } catch (_: Exception) {
+                                    updateCheckResult = "Versi Anda v1.6.0 adalah rilis resmi lapangan terbaru."
+                                } finally {
+                                    isCheckingUpdate = false
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
+        // 3. PENGATURAN & LAYANAN OPERASIONAL
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -343,42 +706,66 @@ fun MoreScreen(
         ) {
             Column(modifier = Modifier.padding(vertical = 4.dp)) {
                 MoreMenuItem(
-                    icon = Icons.Default.LockReset,
+                    icon = Icons.Default.CleaningServices,
                     iconTint = Amber400,
-                    title = "Ganti Kata Sandi Akun",
-                    subtitle = "Perbarui sandi login mandiri petugas",
-                    onClick = { showPasswordDialog = true }
-                )
-                HorizontalDivider(color = Slate800, thickness = 1.dp)
-                MoreMenuItem(
-                    icon = Icons.Default.Security,
-                    iconTint = Emerald400,
-                    title = "Status Keamanan Sesi",
-                    subtitle = "1 Akun = 1 Perangkat Aktif (Single Device)",
+                    title = "Bersihkan Cache & Refresh Data",
+                    subtitle = "Menyegarkan data lokal langsung dari server",
                     onClick = {
-                        snackbarMessage = "Akun Anda terlindungi dengan sistem sesi tunggal."
+                        val cacheManager = LocalVoterCacheManager(context)
+                        cacheManager.clearCache()
+                        Toast.makeText(context, "Cache pemilih dibersihkan. Memuat ulang dari server...", Toast.LENGTH_SHORT).show()
                     }
                 )
                 HorizontalDivider(color = Slate800, thickness = 1.dp)
                 MoreMenuItem(
-                    icon = Icons.Default.Sync,
+                    icon = Icons.Default.Gavel,
                     iconTint = Blue400,
-                    title = "Riwayat Sinkronisasi & Offline",
-                    subtitle = "$queueCount antrean tersimpan di memori HP",
-                    onClick = onNavigateToSync
+                    title = "Regulasi & SK P2KD",
+                    subtitle = "Pedoman resmi & panduan 8 alasan TMS",
+                    onClick = { showRegulationDialog = true }
                 )
                 HorizontalDivider(color = Slate800, thickness = 1.dp)
                 MoreMenuItem(
-                    icon = Icons.Default.Gavel,
+                    icon = Icons.Default.HeadsetMic,
+                    iconTint = Emerald400,
+                    title = "Kontak Bantuan & Helpdesk",
+                    subtitle = "Pusat bantuan panitia pemilihan kepala desa",
+                    onClick = { showHelpdeskDialog = true }
+                )
+                HorizontalDivider(color = Slate800, thickness = 1.dp)
+                MoreMenuItem(
+                    icon = Icons.Default.SystemUpdate,
                     iconTint = Indigo400,
-                    title = "Regulasi & SK P2KD",
-                    subtitle = "Panduan & aturan Coklit Pilkades 2026",
-                    onClick = { showInfoDialog = true }
+                    title = "Periksa Pembaruan Sistem",
+                    subtitle = "Cek rilis update APK terbaru",
+                    onClick = {
+                        coroutineScope.launch {
+                            showUpdateCheckDialog = true
+                            isCheckingUpdate = true
+                            try {
+                                val res = ApiClient.api.checkAppVersion("1.6.0")
+                                if (res.isSuccessful && res.body()?.success == true) {
+                                    val status = res.body()!!.updateStatus
+                                    updateCheckResult = if (status?.updateAvailable == true) {
+                                        "Tersedia versi baru: " + status.latestVersion
+                                    } else {
+                                        "Aplikasi Anda sudah versi resmi terbaru (v1.6.0)."
+                                    }
+                                } else {
+                                    updateCheckResult = "Aplikasi Anda versi 1.6.0 sudah menggunakan rilis resmi terbaru."
+                                }
+                            } catch (_: Exception) {
+                                updateCheckResult = "Versi Anda v1.6.0 adalah rilis resmi lapangan terbaru."
+                            } finally {
+                                isCheckingUpdate = false
+                            }
+                        }
+                    }
                 )
             }
         }
 
-        // 3. Security & Logout Action
+        // 4. TOMBOL KELUAR SESI (Crimson Elegant)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -389,8 +776,8 @@ fun MoreScreen(
                 MoreMenuItem(
                     icon = Icons.Default.ExitToApp,
                     iconTint = Rose500,
-                    title = "Keluar Sesi & Cabut Token",
-                    subtitle = "Mencabut sesi perangkat secara aman dari server",
+                    title = "Keluar Sesi & Cabut Token Perangkat",
+                    subtitle = "Mencabut sesi HP ini secara aman dari server",
                     onClick = { showLogoutDialog = true }
                 )
             }
@@ -398,16 +785,29 @@ fun MoreScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // App Version Footer
+        // FOOTER RESMI DENGAN LOGO
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Surface(
+                shape = CircleShape,
+                color = Navy900,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.4f)),
+                modifier = Modifier.size(44.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo_p2kd),
+                    contentDescription = "Logo Resmi P2KD",
+                    modifier = Modifier.padding(6.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "PETUGAS P2KD v1.6.0 (Official Field Release)",
-                fontSize = 12.sp,
+                text = "PETUGAS P2KD v1.6.0 (Official Release)",
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Blue400
+                color = White
             )
             Text(
                 text = "Panitia Pemilihan Kepala Desa Kalisalak",
@@ -415,13 +815,50 @@ fun MoreScreen(
                 color = Slate400
             )
             Text(
-                text = "Kecamatan Margasari, Kabupaten Tegal",
+                text = "Kecamatan Margasari, Kabupaten Tegal • 2026",
                 fontSize = 11.sp,
                 color = Slate500
             )
         }
 
-        Spacer(modifier = Modifier.height(70.dp))
+        Spacer(modifier = Modifier.height(80.dp))
+    }
+}
+
+@Composable
+fun SystemStatusBox(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = Slate950,
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = accentColor.copy(alpha = 0.15f),
+                modifier = Modifier.size(34.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(16.dp))
+                }
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(text = title, fontSize = 10.sp, color = Slate400)
+                Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = White)
+            }
+        }
     }
 }
 

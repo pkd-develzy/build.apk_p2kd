@@ -272,12 +272,28 @@ fun MainContainerScreen(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
-                            Text(
-                                text = "P2KD KALISALAK",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = White
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "PETUGAS P2KD",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = White
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Blue600.copy(alpha = 0.25f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.5f))
+                                ) {
+                                    Text(
+                                        text = "v1.6.0",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Blue300,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
                             Text(
                                 text = when (selectedTab) {
                                     0 -> "Pilkades 2026 • Petugas Coklit"
