@@ -133,4 +133,15 @@ interface ApiService {
     @GET("api/app/broadcast-banner")
     suspend fun getBroadcastBanner(): Response<BroadcastBannerResponse>
 
+    // Telegram Binding Status & Unlink
+    @GET("api/app/auth/telegram-status")
+    suspend fun getTelegramStatus(
+        @Query("username") username: String? = null
+    ): Response<Map<String, Any>>
+
+    @POST("api/app/auth/telegram-unlink")
+    suspend fun unlinkTelegram(
+        @Body payload: Map<String, String>
+    ): Response<Map<String, Any>>
+
 }

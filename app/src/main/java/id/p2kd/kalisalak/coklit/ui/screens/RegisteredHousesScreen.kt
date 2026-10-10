@@ -15,8 +15,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
@@ -80,35 +82,39 @@ fun RegisteredHousesScreen(
         }
     }
 
+    val totalTerverifikasi = remember(houses) {
+        houses.count { it.statusPendataan == "SELESAI" }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC))
+            .background(BgPearl)
             .padding(horizontal = 16.dp)
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Search bar
+        // 1. KOTAK PENCARIAN (EXECUTIVE WHITE)
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Cari alamat, nomor rumah, atau token QR...", fontSize = 13.sp, color = Slate400) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Blue400) },
+            placeholder = { Text("Cari alamat, nomor rumah, atau kode C6...", fontSize = 13.sp, color = TextSubtle) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = RoyalSapphireBright, modifier = Modifier.size(20.dp)) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = Slate400)
+                        Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = TextSubtle, modifier = Modifier.size(18.dp))
                     }
                 }
             },
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Navy900,
-                unfocusedContainerColor = Navy900,
-                focusedBorderColor = Blue500,
-                unfocusedBorderColor = Slate800,
-                focusedTextColor = White,
-                unfocusedTextColor = White
+                focusedContainerColor = PureWhite,
+                unfocusedContainerColor = PureWhite,
+                focusedBorderColor = RoyalSapphireBright,
+                unfocusedBorderColor = CardBorderSubtle,
+                focusedTextColor = TextMain,
+                unfocusedTextColor = TextMain
             ),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -116,7 +122,63 @@ fun RegisteredHousesScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // RT Filter Chips
+        // 2. TIGA KARTU RINGKASAN METRIK LAPANGAN
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Card 1: Total Rumah
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .shadow(1.dp, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                color = PureWhite,
+                border = androidx.compose.foundation.BorderStroke(1.dp, RoyalSapphireBorder)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text("Rumah Terdata", fontSize = 10.sp, color = TextMuted, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("${houses.size}", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = RoyalSapphireDark)
+                }
+            }
+
+            // Card 2: Terverifikasi
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .shadow(1.dp, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                color = PureWhite,
+                border = androidx.compose.foundation.BorderStroke(1.dp, EmeraldBorder)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text("Terverifikasi", fontSize = 10.sp, color = TextMuted, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("$totalTerverifikasi", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = EmeraldVibrant)
+                }
+            }
+
+            // Card 3: Wilayah RW
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .shadow(1.dp, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                color = PureWhite,
+                border = androidx.compose.foundation.BorderStroke(1.dp, AmberBorder)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text("Wilayah Tugas", fontSize = 10.sp, color = TextMuted, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("RW ${userProfile?.assignedRw ?: '-'}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AmberAccent)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 3. RT FILTER CHIPS
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
@@ -134,51 +196,51 @@ fun RegisteredHousesScreen(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Blue600,
+                        selectedContainerColor = RoyalSapphireBright,
                         selectedLabelColor = White,
-                        containerColor = Navy900,
-                        labelColor = Slate300
+                        containerColor = PureWhite,
+                        labelColor = TextMuted
                     ),
                     shape = RoundedCornerShape(20.dp),
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = isSelected,
-                        selectedBorderColor = Blue400,
-                        borderColor = Slate800
+                        selectedBorderColor = RoyalSapphireBright,
+                        borderColor = CardBorderSubtle
                     )
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Status header & reload button
+        // 4. HEADER STATUS & RELOAD
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Tercatat: " + filteredHouses.size + " Rumah",
-                fontSize = 13.sp,
+                text = "Menampilkan " + filteredHouses.size + " Rumah Terdata",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Slate300
+                color = TextMuted
             )
             IconButton(
                 onClick = { loadHouses() },
                 modifier = Modifier.size(32.dp)
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Blue400, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = RoyalSapphireBright, strokeWidth = 2.dp)
                 } else {
-                    Icon(Icons.Default.Refresh, contentDescription = "Muat Ulang", tint = Blue400, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Refresh, contentDescription = "Muat Ulang", tint = RoyalSapphireBright, modifier = Modifier.size(18.dp))
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // House List / Empty State
+        // 5. HOUSE LIST / EMPTY STATE
         if (filteredHouses.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -186,55 +248,64 @@ fun RegisteredHousesScreen(
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(32.dp)
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = PureWhite,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderSubtle),
+                    modifier = Modifier.padding(24.dp)
                 ) {
-                    Surface(
-                        color = Navy900,
-                        shape = CircleShape,
-                        modifier = Modifier.size(72.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Blue800.copy(alpha = 0.5f))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(24.dp)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Home, contentDescription = null, tint = Blue400, modifier = Modifier.size(36.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = if (houses.isEmpty()) "Belum Ada Rumah Tercatat" else "Tidak Ada Rumah Ditemukan",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = White
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = if (houses.isEmpty())
-                            "Data rumah akan terisi otomatis saat Anda menempel stiker QR di rumah warga dan memindainya."
-                        else "Coba ubah kata kunci pencarian atau pilih RT lainnya.",
-                        fontSize = 12.sp,
-                        color = Slate400,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    if (houses.isEmpty()) {
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = onNavigateToScan,
-                            colors = ButtonDefaults.buttonColors(containerColor = Blue600),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.height(44.dp)
+                        Surface(
+                            color = RoyalSapphireSoft,
+                            shape = CircleShape,
+                            modifier = Modifier.size(64.dp)
                         ) {
-                            Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Pindai QR Rumah Pertama", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Home, contentDescription = null, tint = RoyalSapphireBright, modifier = Modifier.size(32.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = if (houses.isEmpty()) "Belum Ada Rumah Tercatat" else "Tidak Ada Rumah Ditemukan",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextMain
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (houses.isEmpty())
+                                "Data rumah akan otomatis terdaftar saat Anda menempel stiker C6 dan memindainya dengan kamera."
+                            else "Coba ubah kata kunci pencarian atau pilih RT lainnya.",
+                            fontSize = 12.sp,
+                            color = TextMuted,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 16.sp
+                        )
+                        if (houses.isEmpty()) {
+                            Spacer(modifier = Modifier.height(18.dp))
+                            Button(
+                                onClick = onNavigateToScan,
+                                colors = ButtonDefaults.buttonColors(containerColor = RoyalSapphireBright),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                            ) {
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Pindai QR Rumah Pertama", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = White)
+                            }
                         }
                     }
                 }
             }
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
@@ -254,14 +325,15 @@ fun HouseCardItem(
     onClick: () -> Unit
 ) {
     Surface(
-        color = Navy900,
-        shape = RoundedCornerShape(18.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+        color = PureWhite,
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, RoyalSapphireBorder),
+        shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             // Header: QR Token & Status Badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -269,38 +341,39 @@ fun HouseCardItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    color = Blue950,
+                    color = RoyalSapphireSoft,
                     shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Blue800.copy(alpha = 0.6f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RoyalSapphireBorder)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Icon(Icons.Default.QrCode, contentDescription = null, tint = Blue400, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(Icons.Default.QrCode, contentDescription = null, tint = RoyalSapphireBright, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = if (house.qrToken.isNotBlank()) house.qrToken else "STIKER QR",
+                            text = if (house.qrToken.isNotBlank()) "STIKER: #" + house.qrToken.takeLast(8).uppercase() else "STIKER QR C6",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Blue300
+                            color = RoyalSapphireDark
                         )
                     }
                 }
 
+                val isSelesai = house.statusPendataan == "SELESAI"
                 Surface(
-                    color = if (house.statusPendataan == "SELESAI") Emerald900.copy(alpha = 0.3f) else Amber900.copy(alpha = 0.3f),
+                    color = if (isSelesai) EmeraldSoft else AmberSoft,
                     shape = RoundedCornerShape(8.dp),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        if (house.statusPendataan == "SELESAI") Emerald500.copy(alpha = 0.5f) else Amber500.copy(alpha = 0.5f)
+                        if (isSelesai) EmeraldBorder else AmberBorder
                     )
                 ) {
                     Text(
-                        text = if (house.statusPendataan == "SELESAI") "TERVERIFIKASI" else "TERDAFTAR",
+                        text = if (isSelesai) "TERVERIFIKASI" else "TERDAFTAR",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (house.statusPendataan == "SELESAI") Emerald400 else Amber400,
+                        color = if (isSelesai) EmeraldDark else AmberAccent,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
@@ -313,7 +386,9 @@ fun HouseCardItem(
                 text = if (house.alamat.isNotBlank()) house.alamat else "Rumah Warga",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = White
+                color = TextMain,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -321,38 +396,57 @@ fun HouseCardItem(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Blue400, modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.LocationOn, contentDescription = null, tint = RoyalSapphireBright, modifier = Modifier.size(13.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "RT " + house.rt.padStart(2, '0') + " / RW " + house.rw.padStart(2, '0') + " • Desa Kalisalak",
                     fontSize = 12.sp,
-                    color = Slate300
+                    color = TextMuted
                 )
             }
 
             if (!house.keteranganLokasi.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = "Ket: " + house.keteranganLokasi,
                     fontSize = 11.sp,
-                    color = Slate400
+                    color = TextSubtle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Action Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // Action Row
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = RoyalSapphireSoft,
+                border = androidx.compose.foundation.BorderStroke(1.dp, RoyalSapphireBorder),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
             ) {
-                Text(
-                    text = "Sentuh untuk lihat Kartu Keluarga & Jiwa",
-                    fontSize = 11.sp,
-                    color = Slate400
-                )
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Blue400)
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Buka Daftar Kartu Keluarga (KK)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = RoyalSapphireDark
+                    )
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = RoyalSapphireBright,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }

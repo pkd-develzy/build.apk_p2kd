@@ -161,7 +161,7 @@ jobs:
           echo "Mempublikasikan GitHub Release untuk tag: $TAG"
 
           cat << EOF > release_notes.md
-          ## P2KD Kalisalak — Aplikasi Coklit Pemilih Pilkades (Production Release)
+          ## P2KD Kalisalak ï¿½ Aplikasi Coklit Pemilih Pilkades (Production Release)
 
           Aplikasi native Android resmi untuk Petugas Pemutakhiran Data Pemilih (Pantarlih) dan Panitia Pemilihan Kepala Desa (P2KD) Kalisalak.
 
