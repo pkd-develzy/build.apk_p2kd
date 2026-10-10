@@ -54,7 +54,7 @@ fun LoginScreen(
     val currentAppVersion = remember { AppUpdateManager.getInstalledVersion(context) }
     val linkedUser = remember { actualSessionManager.getLastLinkedUser() }
 
-    // Tentukan apakah mode masuk cepat (SeaBank PIN Style) aktif
+    // Tentukan apakah mode masuk cepat (PIN Cepat) aktif
     val canQuickUnlock = remember {
         linkedUser != null && (actualSessionManager.hasPin() || actualSessionManager.isBiometricEnabled())
     }
@@ -219,7 +219,7 @@ fun LoginScreen(
     }
 
     // =========================================================================
-    // MODE A: LAYAR MASUK CEPAT 6-DIGIT PIN & FINGERPRINT (GAYA SEABANK)
+    // MODE A: LAYAR MASUK CEPAT 6-DIGIT PIN & FINGERPRINT
     // =========================================================================
     if (isQuickPinMode && linkedUser != null) {
         val officerName = linkedUser.nama.split(" ").firstOrNull() ?: linkedUser.nama
@@ -329,7 +329,7 @@ fun LoginScreen(
                     }
                 }
 
-                // Bagian Tengah Bawah: Keypad Dialpad Bulat (SeaBank Style)
+                // Bagian Tengah Bawah: Keypad Dialpad Bulat
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -451,7 +451,12 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = { isQuickPinMode = false }) {
+                    TextButton(onClick = {
+                        actualSessionManager.clearSession()
+                        isQuickPinMode = false
+                        username = ""
+                        password = ""
+                    }) {
                         Text("Ganti Akun", color = Blue600, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
 

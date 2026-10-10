@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
 import id.p2kd.kalisalak.coklit.data.local.OfflineQueueManager
 import id.p2kd.kalisalak.coklit.data.models.BroadcastBannerItem
@@ -250,34 +252,56 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Foto Profil / Avatar Petugas
+                        // Foto Profil / Avatar Petugas (Tampilan Anti-Hitam & Fallback Inisial Mewah)
                         Box(contentAlignment = Alignment.BottomEnd) {
+                            val initials = (userProfile?.nama ?: "P").split(" ")
+                                .take(2)
+                                .mapNotNull { it.firstOrNull()?.toString() }
+                                .joinToString("")
+                                .ifBlank { "P" }
+
                             Surface(
                                 shape = CircleShape,
-                                color = Color(0xFF0F2042),
+                                color = Color(0xFFEFF6FF),
                                 border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF2563EB)),
                                 modifier = Modifier.size(52.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                     if (!userProfile?.fotoUrl.isNullOrBlank()) {
-                                        AsyncImage(
-                                            model = userProfile?.fotoUrl,
+                                        SubcomposeAsyncImage(
+                                            model = ImageRequest.Builder(LocalContext.current)
+                                                .data(userProfile?.fotoUrl)
+                                                .crossfade(true)
+                                                .allowHardware(false)
+                                                .build(),
                                             contentDescription = "Foto Petugas",
                                             contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
+                                            modifier = Modifier.fillMaxSize(),
+                                            loading = {
+                                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().background(Color(0xFFEFF6FF))) {
+                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color(0xFF2563EB), strokeWidth = 2.dp)
+                                                }
+                                            },
+                                            error = {
+                                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().background(Color(0xFFEFF6FF))) {
+                                                    Text(
+                                                        text = initials,
+                                                        fontSize = 18.sp,
+                                                        fontWeight = FontWeight.Black,
+                                                        color = Color(0xFF2563EB)
+                                                    )
+                                                }
+                                            }
                                         )
                                     } else {
-                                        val initials = (userProfile?.nama ?: "P").split(" ")
-                                            .take(2)
-                                            .mapNotNull { it.firstOrNull()?.toString() }
-                                            .joinToString("")
-                                            .ifBlank { "P" }
-                                        Text(
-                                            text = initials,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
+                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().background(Color(0xFFEFF6FF))) {
+                                            Text(
+                                                text = initials,
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color(0xFF2563EB)
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -55,9 +55,23 @@ class EncryptedSessionManager(val context: Context) {
     }
 
     fun saveSession(token: String, profile: UserProfile) {
+        val previousUser = getUserProfile()
+        val isDifferentUser = previousUser != null && !previousUser.username.equals(profile.username, ignoreCase = true)
+
+        val editor = sharedPreferences.edit()
+        if (isDifferentUser) {
+            // Pengguna berganti! Bersihkan pengaturan akun lama (PIN, Biometrik, Telegram link)
+            editor.remove(KEY_PIN_HASH)
+            editor.remove(KEY_BIOMETRIC_ENABLED)
+            editor.remove(KEY_TELEGRAM_LINKED)
+            editor.remove(KEY_TELEGRAM_USERNAME)
+            try {
+                id.p2kd.kalisalak.coklit.data.local.LocalVoterCacheManager(context).clearCache()
+            } catch (_: Exception) {}
+        }
+
         val userJson = gson.toJson(profile)
-        sharedPreferences.edit()
-            .putString(KEY_AUTH_TOKEN, token)
+        editor.putString(KEY_AUTH_TOKEN, token)
             .putString(KEY_USER_PROFILE, userJson)
             .putString(KEY_LAST_LINKED_USER, userJson)
             .putLong(KEY_LAST_ACTIVE_TIME, System.currentTimeMillis())
@@ -97,20 +111,27 @@ class EncryptedSessionManager(val context: Context) {
     }
 
     fun clearSession() {
-        sharedPreferences.edit()
-            .remove(KEY_AUTH_TOKEN)
-            .remove(KEY_USER_PROFILE)
-            .apply()
-    }
-
-    fun clearAllAndSwitchAccount() {
+        // Hapus 100% seluruh preferensi, kredensial, kunci PIN, dan tautan akun lama
         sharedPreferences.edit()
             .remove(KEY_AUTH_TOKEN)
             .remove(KEY_USER_PROFILE)
             .remove(KEY_LAST_LINKED_USER)
             .remove(KEY_PIN_HASH)
             .remove(KEY_BIOMETRIC_ENABLED)
+            .remove(KEY_AUTO_LOCK_MINUTES)
+            .remove(KEY_LAST_ACTIVE_TIME)
+            .remove(KEY_TELEGRAM_LINKED)
+            .remove(KEY_TELEGRAM_USERNAME)
             .apply()
+
+        // Hapus cache data pemilih lokal agar tidak terbawa ke akun lain
+        try {
+            id.p2kd.kalisalak.coklit.data.local.LocalVoterCacheManager(context).clearCache()
+        } catch (_: Exception) {}
+    }
+
+    fun clearAllAndSwitchAccount() {
+        clearSession()
     }
 
     fun getServerUrl(): String {
@@ -131,7 +152,7 @@ class EncryptedSessionManager(val context: Context) {
     }
 
     // ==========================================
-    // 6-DIGIT PIN SECURITY (SeaBank Banking Pattern)
+    // 6-DIGIT PIN SECURITY (Sistem Keamanan Terenkripsi P2KD)
     // ==========================================
 
     private fun hashPin(pin: String): String {

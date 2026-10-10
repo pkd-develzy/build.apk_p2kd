@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import androidx.compose.ui.layout.ContentScale
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -181,7 +183,7 @@ fun MoreScreen(
         )
     }
 
-    // DIALOG ATUR 6-DIGIT PIN (GAYA SEABANK)
+    // DIALOG ATUR 6-DIGIT PIN RESMI P2KD
     if (showPinSetupDialog) {
         var inputPin by remember { mutableStateOf("") }
         var confirmPin by remember { mutableStateOf("") }
@@ -551,9 +553,13 @@ fun MoreScreen(
         )
     }
 
-    // DIALOG 2: Perbarui Foto Profil Petugas
+    // DIALOG 2: View & Ganti Foto Profil dari Galeri (Tanpa Input Link / URL)
     if (showPhotoDialog) {
-        var inputUrl by remember { mutableStateOf(user?.fotoUrl ?: "") }
+        val initials = (user?.nama ?: "P").split(" ")
+            .take(2)
+            .mapNotNull { it.firstOrNull()?.toString() }
+            .joinToString("")
+            .ifBlank { "P" }
 
         AlertDialog(
             onDismissRequest = { if (!isUpdatingPhoto) showPhotoDialog = false },
@@ -566,27 +572,61 @@ fun MoreScreen(
             },
             text = {
                 Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text("Pilih foto resmi wajah dari galeri HP Anda:", fontSize = 12.sp, color = Color(0xFF475569))
-
-                    Button(
-                        onClick = { galleryPickerLauncher.launch("image/*") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Blue600),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                    // Preview Foto Besar (150 dp)
+                    Surface(
+                        modifier = Modifier
+                            .size(150.dp)
+                            .clip(CircleShape),
+                        shape = CircleShape,
+                        color = Color(0xFFEFF6FF),
+                        border = androidx.compose.foundation.BorderStroke(3.dp, Blue600),
+                        shadowElevation = 4.dp
                     ) {
-                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Buka Galeri Foto HP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        if (!user?.fotoUrl.isNullOrBlank()) {
+                            SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(user?.fotoUrl)
+                                    .crossfade(true)
+                                    .allowHardware(false)
+                                    .build(),
+                                contentDescription = "Foto Profil Penuh",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                                loading = {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().background(Color(0xFFEFF6FF))) {
+                                        CircularProgressIndicator(modifier = Modifier.size(36.dp), color = Blue600, strokeWidth = 3.dp)
+                                    }
+                                },
+                                error = {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().background(Color(0xFFEFF6FF))) {
+                                        Text(text = initials, fontWeight = FontWeight.ExtraBold, fontSize = 42.sp, color = Blue600)
+                                    }
+                                }
+                            )
+                        } else {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().background(Color(0xFFEFF6FF))) {
+                                Text(text = initials, fontWeight = FontWeight.ExtraBold, fontSize = 42.sp, color = Blue600)
+                            }
+                        }
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(user?.nama ?: "Petugas P2KD", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF0F172A))
+                        Text(user?.jabatan ?: "Petugas Lapangan", fontSize = 12.sp, color = Color(0xFF64748B))
                     }
 
                     if (photoError != null) {
                         Surface(
                             color = Color(0xFFFEF2F2),
                             shape = RoundedCornerShape(10.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFECACA))
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFECACA)),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
                                 text = photoError!!,
@@ -597,62 +637,33 @@ fun MoreScreen(
                         }
                     }
 
-                    HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
-
-                    Text("Atau masukkan tautan URL foto langsung:", fontSize = 12.sp, color = Color(0xFF64748B))
-
-                    OutlinedTextField(
-                        value = inputUrl,
-                        onValueChange = { inputUrl = it },
-                        label = { Text("Tautan URL Foto (Opsional)", fontSize = 11.sp) },
-                        placeholder = { Text("https://...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (inputUrl.isNotBlank() && inputUrl != user?.fotoUrl) {
-                            isUpdatingPhoto = true
-                            coroutineScope.launch {
-                                try {
-                                    val res = ApiClient.api.updateProfilePhoto(ProfilePhotoRequest(image = inputUrl.trim()))
-                                    if (res.isSuccessful && res.body()?.success == true) {
-                                        val updatedUser = user?.copy(fotoUrl = inputUrl.trim())
-                                        if (updatedUser != null) {
-                                            val token = sessionManager.getAuthToken() ?: ""
-                                            sessionManager.saveSession(token, updatedUser)
-                                            user = updatedUser
-                                        }
-                                        snackbarMessage = "Foto profil berhasil diperbarui!"
-                                        showPhotoDialog = false
-                                    } else {
-                                        photoError = res.body()?.message ?: "Gagal memperbarui foto profil."
-                                    }
-                                } catch (e: Exception) {
-                                    photoError = "Gagal terhubung: " + (e.localizedMessage ?: "Coba lagi")
-                                } finally {
-                                    isUpdatingPhoto = false
-                                }
-                            }
-                        } else {
-                            showPhotoDialog = false
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
-                    enabled = !isUpdatingPhoto,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
                     if (isUpdatingPhoto) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text("Simpan URL", color = Color.White)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Blue600, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Mengunggah foto ke server...", fontSize = 12.sp, color = Blue600, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    // SATU-SATUNYA TOMBOL AKSI: Ganti Foto dari Galeri HP Langsung
+                    Button(
+                        onClick = { galleryPickerLauncher.launch("image/*") },
+                        colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isUpdatingPhoto
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pilih Foto dari Galeri HP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             },
+            confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showPhotoDialog = false }, enabled = !isUpdatingPhoto) {
                     Text("Tutup", color = Color(0xFF64748B))
@@ -1021,7 +1032,7 @@ fun MoreScreen(
         }
 
         // =========================================================================
-        // 2. KARTU KEAMANAN & KUNCI APLIKASI (GAYA PERBANKAN / SEABANK)
+        // 2. KARTU KEAMANAN & KUNCI APLIKASI (STANDAR TERENKRIPSI)
         // =========================================================================
         Surface(
             modifier = Modifier
@@ -1053,7 +1064,7 @@ fun MoreScreen(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBBF7D0))
                     ) {
                         Text(
-                            text = "Banking Grade",
+                            text = "Terenkripsi AES-256",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = Emerald600,
@@ -1073,7 +1084,7 @@ fun MoreScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("6-Digit PIN Masuk Cepat", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
                         Text(
-                            text = if (isPinActive) "Aktif (Masuk cepat gaya SeaBank)" else "Belum dibuat (Gunakan kata sandi)",
+                            text = if (isPinActive) "Aktif (Akses Cepat 6-Digit PIN)" else "Belum dibuat (Gunakan kata sandi)",
                             fontSize = 11.sp,
                             color = if (isPinActive) Emerald600 else Color(0xFF64748B)
                         )
