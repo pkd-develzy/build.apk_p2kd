@@ -157,7 +157,7 @@ fun VoterDataScreen(
                 else -> {
                     if (selectedFilterChip.startsWith("RT")) {
                         val rtNum = selectedFilterChip.removePrefix("RT").trim()
-                        voter.rt.replace("\\D".toRegex(), "").padStart(2, '0') == rtNum.padStart(2, '0')
+                        (voter.rt ?: "").replace("\\D".toRegex(), "").padStart(2, '0') == rtNum.padStart(2, '0')
                     } else true
                 }
             }
@@ -795,7 +795,7 @@ fun VoterCardComplete(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "RT ${voter.rt.padStart(2, '0')} / RW ${voter.rw.padStart(2, '0')}",
+                        text = "RT ${(voter.rt ?: "01").padStart(2, '0')} / RW ${(voter.rw ?: "01").padStart(2, '0')}",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = White

@@ -431,21 +431,14 @@ fun MoreScreen(
                 Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("8 Alasan Resmi Pemilih TMS (Tidak Memenuhi Syarat):", fontWeight = FontWeight.Bold, color = Rose400, fontSize = 12.sp)
                     Text(
-                        "1. Meninggal Dunia (disertai surat/keterangan kematian)
-" +
-                        "2. Data Ganda (terdaftar di lebih dari satu TPS/wilayah)
-" +
-                        "3. Di Bawah Umur (< 17 tahun dan belum menikah)
-" +
-                        "4. Pindah Domisili Keluar Desa
-" +
-                        "5. Tidak Dikenal / Fiktif
-" +
-                        "6. Anggota TNI Aktif
-" +
-                        "7. Anggota POLRI Aktif
-" +
-                        "8. Hak Pilih Dicabut Pengadilan",
+                        text = "1. Meninggal Dunia (disertai surat/keterangan kematian)\n" +
+                               "2. Data Ganda (terdaftar di lebih dari satu TPS/wilayah)\n" +
+                               "3. Di Bawah Umur (< 17 tahun dan belum menikah)\n" +
+                               "4. Pindah Domisili Keluar Desa\n" +
+                               "5. Tidak Dikenal / Fiktif\n" +
+                               "6. Anggota TNI Aktif\n" +
+                               "7. Anggota POLRI Aktif\n" +
+                               "8. Hak Pilih Dicabut Pengadilan",
                         fontSize = 12.sp,
                         color = Slate300
                     )
@@ -506,7 +499,7 @@ fun MoreScreen(
         // Feedback Message Toast Banner
         if (snackbarMessage != null) {
             Surface(
-                color = Emerald950,
+                color = Emerald900,
                 shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Emerald500),
                 modifier = Modifier.fillMaxWidth()
@@ -516,7 +509,7 @@ fun MoreScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = snackbarMessage!!, fontSize = 12.sp, color = Emerald300, modifier = Modifier.weight(1f))
+                    Text(text = snackbarMessage!!, fontSize = 12.sp, color = Emerald400, modifier = Modifier.weight(1f))
                     IconButton(onClick = { snackbarMessage = null }, modifier = Modifier.size(20.dp)) {
                         Icon(Icons.Default.Close, contentDescription = null, tint = Slate400, modifier = Modifier.size(14.dp))
                     }
