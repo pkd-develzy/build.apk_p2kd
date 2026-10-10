@@ -13,8 +13,8 @@ android {
         applicationId = "id.p2kd.kalisalak.coklit"
         minSdk = 24
         targetSdk = 34
-        versionCode = 12
-        versionName = "1.9.1"
+        versionCode = 13
+        versionName = "1.10.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -81,6 +81,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.biometric:biometric:1.1.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

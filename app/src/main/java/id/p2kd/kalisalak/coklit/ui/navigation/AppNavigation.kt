@@ -42,7 +42,8 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
 
-    val startDestination = if (sessionManager.getToken() != null) "main" else "login"
+    val shouldLock = sessionManager.isAutoLockTriggered()
+    val startDestination = if (sessionManager.getToken() != null && !shouldLock) "main" else "login"
 
     // In-memory state for current visit verification list
     var currentVerifikasiList by remember { mutableStateOf<List<MemberVerificationPayload>>(emptyList()) }

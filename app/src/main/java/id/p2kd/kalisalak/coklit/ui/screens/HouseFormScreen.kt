@@ -50,7 +50,7 @@ fun HouseFormScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
-        containerColor = Navy950,
+        containerColor = Color(0xFFF8FAFC),
         topBar = {
             TopAppBar(
                 title = {

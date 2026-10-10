@@ -116,7 +116,7 @@ fun NotificationCenterScreen(
     }
 
     Scaffold(
-        containerColor = Slate950,
+        containerColor = Color(0xFFF8FAFC),
         topBar = {
             TopAppBar(
                 title = {
@@ -155,7 +155,7 @@ fun NotificationCenterScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Slate950
+                    containerColor = Color(0xFFF8FAFC)
                 )
             )
         }

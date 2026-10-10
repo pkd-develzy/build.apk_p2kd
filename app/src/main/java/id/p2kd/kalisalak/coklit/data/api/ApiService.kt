@@ -118,4 +118,8 @@ interface ApiService {
         @Header("x-app-version") currentVersion: String? = null
     ): Response<VersionCheckResponse>
 
+    // Broadcast Announcement Banner (Pengumuman Bergambar di Beranda)
+    @GET("api/app/broadcast-banner")
+    suspend fun getBroadcastBanner(): Response<BroadcastBannerResponse>
+
 }

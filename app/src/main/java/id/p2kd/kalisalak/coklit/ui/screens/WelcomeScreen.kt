@@ -1,62 +1,75 @@
 package id.p2kd.kalisalak.coklit.ui.screens
 
-import android.os.Build.VERSION.SDK_INT
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
-import coil.compose.AsyncImage
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.request.ImageRequest
 import id.p2kd.kalisalak.coklit.R
 import id.p2kd.kalisalak.coklit.ui.theme.*
 import kotlinx.coroutines.delay
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun WelcomeScreen(
     onFinish: () -> Unit
 ) {
-    val context = LocalContext.current
-    var showWelcomeText by remember { mutableStateOf(false) }
+    // Teks lengkap yang akan ditulis otomatis berjalan (Typewriter effect)
+    val fullTitle = "Selamat Datang Petugas"
+    val fullSubtitle = "Pilkades Kalisalak 2026"
 
-    // Inisialisasi Coil ImageLoader dengan GIF Decoder
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components {
-                if (SDK_INT >= 28) {
-                    add(ImageDecoderDecoder.Factory())
-                } else {
-                    add(GifDecoder.Factory())
-                }
-            }
-            .build()
+    var displayedTitle by remember { mutableStateOf("") }
+    var displayedSubtitle by remember { mutableStateOf("") }
+    var isLogoVisible by remember { mutableStateOf(false) }
+    var isCursorVisible by remember { mutableStateOf(true) }
+
+    // Efek kursor berkedip
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(450L)
+            isCursorVisible = !isCursorVisible
+        }
     }
 
-    // Durasi putar animasi welcome screen (~3 detik) lalu otomatis masuk
+    // Efek animasi menulis huruf demi huruf (Typewriter Animation)
     LaunchedEffect(Unit) {
         delay(200L)
-        showWelcomeText = true
-        delay(3200L)
+        isLogoVisible = true
+        delay(400L)
+
+        // Tulis baris pertama
+        for (i in 1..fullTitle.length) {
+            displayedTitle = fullTitle.substring(0, i)
+            delay(55L)
+        }
+
+        delay(150L)
+
+        // Tulis baris kedua
+        for (j in 1..fullSubtitle.length) {
+            displayedSubtitle = fullSubtitle.substring(0, j)
+            delay(45L)
+        }
+
+        // Tahan sejenak setelah selesai menulis lalu otomatis masuk
+        delay(1200L)
         onFinish()
     }
 
@@ -65,106 +78,113 @@ fun WelcomeScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Navy950, Color(0xFF070D18), Navy950)
+                    colors = listOf(
+                        Color(0xFFFFFFFF),
+                        Color(0xFFF8FAFC),
+                        Color(0xFFEEF2F6)
+                    )
                 )
             )
-            .clickable { onFinish() }, // Bisa di-tap untuk skip instan
+            .clickable { onFinish() }, // Bisa disentuh di mana saja untuk skip langsung
         contentAlignment = Alignment.Center
     ) {
-        // 1. Tampilan Utama Animasi GIF Welcome Screen
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(R.raw.welcome_screen)
-                .build(),
-            imageLoader = imageLoader,
-            contentDescription = "Welcome Screen Pantarlih",
-            contentScale = ContentScale.Fit,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        )
-
-        // 2. Banner Teks Berjalan Kaligrafi Elegan (Gaya Apple / iOS Welcome)
-        AnimatedVisibility(
-            visible = showWelcomeText,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { -40 }),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 70.dp, start = 20.dp, end = 20.dp)
+                .padding(horizontal = 24.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+            // 1. LOGO RESMI PANTARLIH DI TENGAH LAYAR
+            AnimatedVisibility(
+                visible = isLogoVisible,
+                enter = fadeIn(animationSpec = tween(600)) + scaleIn(initialScale = 0.7f, animationSpec = tween(600))
             ) {
-                // Kaligrafi iOS-style Cursive Title
-                Text(
-                    text = "Selamat Datang Petugas",
-                    fontFamily = FontFamily.Cursive,
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(
-                            iterations = Int.MAX_VALUE,
-                            delayMillis = 800,
-                            velocity = 45.dp
-                        )
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Subtitle Badge Elegan
                 Surface(
-                    color = Blue950.copy(alpha = 0.75f),
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Blue400.copy(alpha = 0.5f))
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 12.dp,
+                    border = androidx.compose.foundation.BorderStroke(2.5.dp, Color(0xFF1E3A8A)),
+                    modifier = Modifier.size(125.dp)
                 ) {
-                    Text(
-                        text = "PILKADES KALISALAK 2026",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Blue300,
-                        letterSpacing = 1.5.sp,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_p2kd),
+                            contentDescription = "Logo Resmi Pantarlih P2KD",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                        )
+                    }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // 2. TEKS BERJALAN MENULIS (TYPEWRITER EFFECT)
+            Text(
+                text = displayedTitle + if (displayedSubtitle.isEmpty() && isCursorVisible) "|" else "",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0F2042), // Deep Executive Navy
+                textAlign = TextAlign.Center,
+                letterSpacing = 0.5.sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = displayedSubtitle + if (displayedSubtitle.isNotEmpty() && isCursorVisible) "|" else "",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF2563EB), // Blue Accent
+                textAlign = TextAlign.Center,
+                letterSpacing = 1.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. LENCANA RESMI SEKRETARIAT
+            Surface(
+                color = Color(0xFF0F2042),
+                shape = RoundedCornerShape(20.dp),
+                shadowElevation = 4.dp
+            ) {
+                Text(
+                    text = "KOMISI PEMILIHAN KEPALA DESA KALISALAK",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFCD34D), // Amber Gold
+                    letterSpacing = 1.2.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                )
             }
         }
 
-        // 3. Indikator Loading Bawah & Tombol Lewati
+        // 4. FOOTER BAWAH: INDIKATOR LOADING HALUS & TOMBOL LEWATI
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = Blue400,
-                strokeWidth = 2.5.dp
+                modifier = Modifier.size(20.dp),
+                color = Color(0xFF1E3A8A),
+                strokeWidth = 2.dp
             )
             Text(
-                text = "Memuat Sistem Coklit Pilkades Kalisalak...",
-                fontSize = 12.sp,
-                color = Slate400,
+                text = "Ketuk layar untuk masuk langsung",
+                fontSize = 11.sp,
+                color = Color(0xFF64748B),
                 fontWeight = FontWeight.Medium
             )
-            Surface(
-                color = Navy900.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
-                modifier = Modifier.clickable { onFinish() }
-            ) {
-                Text(
-                    text = "Ketuk untuk Masuk Langsung",
-                    fontSize = 11.sp,
-                    color = Blue300,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
         }
     }
 }

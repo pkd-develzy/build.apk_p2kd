@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -41,16 +40,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import id.p2kd.kalisalak.coklit.data.security.EncryptedSessionManager
 import id.p2kd.kalisalak.coklit.data.update.AppUpdateManager
 import id.p2kd.kalisalak.coklit.data.update.UpdateInfo
 import id.p2kd.kalisalak.coklit.ui.navigation.AppNavigation
 import id.p2kd.kalisalak.coklit.ui.screens.WelcomeScreen
 import id.p2kd.kalisalak.coklit.ui.theme.*
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
+
+    private lateinit var sessionManager: EncryptedSessionManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sessionManager = EncryptedSessionManager(this)
+        sessionManager.updateLastActiveTime()
         enableEdgeToEdge()
+
         setContent {
             P2kdTheme {
                 Surface(
@@ -80,6 +87,20 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (::sessionManager.isInitialized) {
+            sessionManager.updateLastActiveTime()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::sessionManager.isInitialized) {
+            sessionManager.updateLastActiveTime()
         }
     }
 }
@@ -126,20 +147,21 @@ fun AppUpdateGuardWrapper(
                         isDialogDismissed = true
                     }
                 },
-                containerColor = Navy900,
+                containerColor = Color.White,
                 shape = RoundedCornerShape(26.dp),
                 icon = {
                     Surface(
-                        color = Blue600.copy(alpha = 0.2f),
+                        modifier = Modifier.size(56.dp),
                         shape = CircleShape,
-                        modifier = Modifier.size(60.dp)
+                        color = Color(0xFFEFF6FF),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, Blue600)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.SystemUpdate,
-                                contentDescription = "Pembaruan",
-                                tint = Blue400,
-                                modifier = Modifier.size(32.dp)
+                                contentDescription = null,
+                                tint = Blue600,
+                                modifier = Modifier.size(28.dp)
                             )
                         }
                     }
@@ -147,60 +169,54 @@ fun AppUpdateGuardWrapper(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Pembaruan Tersedia!",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = "Rilis Resmi v${info.newVersion}",
                             fontWeight = FontWeight.Black,
-                            color = White
+                            fontSize = 20.sp,
+                            color = Color(0xFF0F172A)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Surface(
-                            color = Amber500.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(
-                                text = "Versi Terbaru: v${info.newVersion}",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Amber400,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Text(
+                            text = "Pembaruan Lapangan P2KD Kalisalak",
+                            fontSize = 12.sp,
+                            color = Blue600,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 },
                 text = {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "Versi terbaru PETUGAS P2KD siap diunduh. Harap perbarui aplikasi Anda untuk kelancaran tugas Coklit di lapangan:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Slate300
+                            text = "Pembaruan versi ${info.newVersion} tersedia untuk menunjang kelancaran dan akurasi data.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF475569),
+                            lineHeight = 18.sp
                         )
 
                         if (info.releaseNotes.isNotEmpty()) {
                             Surface(
-                                color = Navy800,
-                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFFF8FAFC),
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
+                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(
                                         text = "Catatan Pembaruan:",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Blue400,
-                                        fontWeight = FontWeight.Bold
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
                                     )
                                     info.releaseNotes.forEach { note ->
-                                        Text(
-                                            text = "• $note",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Slate200,
-                                            fontSize = 12.sp
-                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text("•", color = Blue600, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                            Text(note, color = Color(0xFF334155), fontSize = 12.sp, lineHeight = 16.sp)
+                                        }
                                     }
                                 }
                             }
@@ -210,18 +226,16 @@ fun AppUpdateGuardWrapper(
                 confirmButton = {
                     Button(
                         onClick = {
-                            val downloadIntent = Intent(Intent.ACTION_VIEW, Uri.parse(info.downloadUrl)).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            context.startActivity(downloadIntent)
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(info.downloadUrl))
+                            context.startActivity(intent)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Blue600),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Unduh Pembaruan Sekarang", color = White, fontWeight = FontWeight.Bold)
+                        Text("Unduh & Perbarui APK Sekarang", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 },
                 dismissButton = {
@@ -230,7 +244,7 @@ fun AppUpdateGuardWrapper(
                             onClick = { isDialogDismissed = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Nanti Saja", color = Slate400, fontSize = 13.sp)
+                            Text("Nanti Saja", color = Color(0xFF64748B), fontSize = 13.sp)
                         }
                     }
                 }
@@ -240,8 +254,8 @@ fun AppUpdateGuardWrapper(
 }
 
 /**
- * Professional Permission Guard:
- * Langsung meminta izin Kamera, Lokasi, dan Notifikasi saat aplikasi pertama kali dibuka.
+ * Permission Guard Wrapper:
+ * Memastikan izin Kamera, Notifikasi (Android 13+), dan Lokasi diaktifkan secara interaktif.
  */
 @Composable
 fun PermissionGuardWrapper(
@@ -250,167 +264,113 @@ fun PermissionGuardWrapper(
     val context = LocalContext.current
 
     val requiredPermissions = remember {
-        val list = mutableListOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
+        val list = mutableListOf(Manifest.permission.CAMERA)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             list.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        list
+        list.toTypedArray()
     }
 
-    fun checkAllGranted(): Boolean {
-        return requiredPermissions.all { perm ->
-            ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
+    fun hasPermissions(): Boolean {
+        return requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
     }
 
-    var allGranted by remember { mutableStateOf(checkAllGranted()) }
-    var hasAttemptedRequest by remember { mutableStateOf(false) }
+    var isGranted by remember { mutableStateOf(hasPermissions()) }
+    var showDialog by remember { mutableStateOf(false) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
+    val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        hasAttemptedRequest = true
-        allGranted = checkAllGranted()
+    ) { map ->
+        val cameraGranted = map[Manifest.permission.CAMERA] == true
+        if (cameraGranted) {
+            isGranted = true
+            showDialog = false
+        } else {
+            isGranted = false
+            showDialog = true
+        }
     }
 
-    // Otomatis meminta semua izin runtime langsung saat aplikasi dijalankan
     LaunchedEffect(Unit) {
-        if (!allGranted) {
-            permissionLauncher.launch(requiredPermissions.toTypedArray())
+        if (!hasPermissions()) {
+            launcher.launch(requiredPermissions)
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         content()
 
-        // Pop-up dialog penjelasan profesional jika izin ditolak / belum lengkap
         AnimatedVisibility(
-            visible = !allGranted && hasAttemptedRequest,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
+            visible = !isGranted && showDialog,
+            enter = fadeIn() + slideInVertically(),
+            exit = fadeOut() + slideOutVertically()
         ) {
-            AlertDialog(
-                onDismissRequest = { /* Modal wajib konfirmasi untuk kelancaran tugas lapangan */ },
-                containerColor = Navy900,
-                shape = RoundedCornerShape(24.dp),
-                icon = {
-                    Surface(
-                        color = Amber500.copy(alpha = 0.2f),
-                        shape = CircleShape,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Security,
-                                contentDescription = null,
-                                tint = Amber400,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                },
-                title = {
-                    Text(
-                        text = "Izin Perangkat Diperlukan",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = White
-                    )
-                },
-                text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.75f))
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(24.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = "Aplikasi PETUGAS P2KD memerlukan 3 izin utama agar seluruh modul operasional lapangan berfungsi normal:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Slate300
-                        )
-
-                        PermissionRequirementRow(
-                            icon = Icons.Default.CameraAlt,
-                            title = "Kamera Belakang (CameraX)",
-                            description = "Pindai stiker QR 1 Rumah & dokumentasi fisik di lapangan."
-                        )
-
-                        PermissionRequirementRow(
-                            icon = Icons.Default.LocationOn,
-                            title = "Lokasi Presisi (GPS)",
-                            description = "Penandaan titik koordinat geografis rumah pemilih secara akurat."
-                        )
-
-                        PermissionRequirementRow(
-                            icon = Icons.Default.Notifications,
-                            title = "Notifikasi Real-time",
-                            description = "Pemberitahuan instruksi panitia & pembaruan tahapan Pilkades."
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val stillMissing = requiredPermissions.any {
-                                ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFEFF6FF),
+                            modifier = Modifier.size(64.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Security,
+                                    contentDescription = null,
+                                    tint = Blue600,
+                                    modifier = Modifier.size(32.dp)
+                                )
                             }
-                            if (stillMissing) {
-                                permissionLauncher.launch(requiredPermissions.toTypedArray())
-                            } else {
-                                allGranted = true
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Blue600),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Berikan Semua Izin", color = White, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
-                            }
-                            context.startActivity(intent)
                         }
-                    ) {
-                        Text("Buka Pengaturan HP", color = Slate400, fontSize = 12.sp)
+
+                        Text(
+                            text = "Izin Perangkat Diperlukan",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+
+                        Text(
+                            text = "Untuk menggunakan fitur Pindai QR Stiker dan menerima pembaruan data pemilih, berikan izin Kamera dan Notifikasi.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF475569),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+
+                        Button(
+                            onClick = {
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                                context.startActivity(intent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Buka Pengaturan HP", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
-            )
-        }
-    }
-}
-
-@Composable
-private fun PermissionRequirementRow(
-    icon: ImageVector,
-    title: String,
-    description: String
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Navy800, RoundedCornerShape(12.dp))
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Surface(
-            color = Blue600.copy(alpha = 0.2f),
-            shape = CircleShape,
-            modifier = Modifier.size(36.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(imageVector = icon, contentDescription = null, tint = Blue400, modifier = Modifier.size(18.dp))
             }
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.labelMedium, color = White, fontWeight = FontWeight.Bold)
-            Text(text = description, style = MaterialTheme.typography.bodySmall, color = Slate400, fontSize = 11.sp)
         }
     }
 }

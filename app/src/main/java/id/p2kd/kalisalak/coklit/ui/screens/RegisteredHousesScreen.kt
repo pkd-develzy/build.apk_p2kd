@@ -83,7 +83,7 @@ fun RegisteredHousesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate950)
+            .background(Color(0xFFF8FAFC))
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(12.dp))

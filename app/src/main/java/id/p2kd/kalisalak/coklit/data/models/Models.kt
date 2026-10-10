@@ -486,7 +486,10 @@ data class VoterUpdatesPayload(
     @SerializedName("alamat") val alamat: String? = null,
     @SerializedName("rt") val rt: String? = null,
     @SerializedName("rw") val rw: String? = null,
-    @SerializedName("tps") val tps: String? = null
+    @SerializedName("tps") val tps: String? = null,
+    @SerializedName("targetRw") val targetRw: String? = null,
+    @SerializedName("targetRt") val targetRt: String? = null,
+    @SerializedName("alasanMutasi") val alasanMutasi: String? = null
 )
 
 data class VoterCoklitActionRequest(
@@ -544,4 +547,20 @@ data class ProfilePhotoResponse(
     @SerializedName("success") val success: Boolean = false,
     @SerializedName("fotoUrl") val fotoUrl: String? = null,
     @SerializedName("message") val message: String = ""
+)
+// 12. Broadcast Banner Model (Notifikasi Pengumuman Bergambar di Beranda)
+data class BroadcastBannerItem(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("title") val title: String = "",
+    @SerializedName("content") val content: String = "",
+    @SerializedName("imageUrl") val imageUrl: String? = null,
+    @SerializedName("category") val category: String = "PENGUMUMAN",
+    @SerializedName("createdAt") val createdAt: String? = null,
+    @SerializedName("isActive") val isActive: Boolean = true
+)
+
+data class BroadcastBannerResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("hasActiveBanner") val hasActiveBanner: Boolean = false,
+    @SerializedName("banner") val banner: BroadcastBannerItem? = null
 )

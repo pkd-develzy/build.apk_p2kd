@@ -17,37 +17,45 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
 import id.p2kd.kalisalak.coklit.data.local.OfflineQueueManager
+import id.p2kd.kalisalak.coklit.data.models.BroadcastBannerItem
 import id.p2kd.kalisalak.coklit.data.models.TaskSummary
+import id.p2kd.kalisalak.coklit.data.models.UserProfile
 import id.p2kd.kalisalak.coklit.data.security.EncryptedSessionManager
 import id.p2kd.kalisalak.coklit.ui.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
-    sessionManager: EncryptedSessionManager,
-    offlineQueue: OfflineQueueManager,
-    onNavigateToScan: () -> Unit,
     onNavigateToTasks: () -> Unit,
+    onNavigateToScan: () -> Unit,
+    onNavigateToKkList: () -> Unit,
     onNavigateToSync: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNavigateToRegisteredHouses: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val sessionManager = remember { EncryptedSessionManager(context) }
+    val offlineManager = remember { OfflineQueueManager(context) }
     val coroutineScope = rememberCoroutineScope()
-    val userProfile = sessionManager.getUserProfile()
-    val queueItems by offlineQueue.itemsFlow.collectAsState()
+
+    val userProfile = remember { sessionManager.getUserProfile() }
+    val queueItems by offlineManager.queueFlow.collectAsState(initial = emptyList())
     val pendingSyncCount = queueItems.count { it.syncState != id.p2kd.kalisalak.coklit.data.models.SyncState.SYNCED }
 
     var summary by remember {
         mutableStateOf(
             TaskSummary(
-                totalRumah = 0,
-                selesaiRumah = 0,
+                totalTugas = 0,
+                selesai = 0,
+                belumSelesai = 0,
                 perluFollowUp = 0,
                 stikerTersedia = 1300,
                 totalPemilihWilayah = 7787
@@ -57,12 +65,11 @@ fun HomeScreen(
     var totalCocok by remember { mutableIntStateOf(0) }
     var totalTms by remember { mutableIntStateOf(0) }
     var totalDpt by remember { mutableIntStateOf(7787) }
-    var isRefreshing by remember { mutableStateOf(false) }
     var taskErrorMessage by remember { mutableStateOf<String?>(null) }
+    var broadcastBanner by remember { mutableStateOf<BroadcastBannerItem?>(null) }
 
     fun refreshTasks() {
         coroutineScope.launch {
-            isRefreshing = true
             taskErrorMessage = null
             try {
                 val api = ApiClient.getService(sessionManager)
@@ -74,15 +81,25 @@ fun HomeScreen(
                     taskErrorMessage = res.body()?.message ?: "Gagal memuat data server"
                 }
 
-                // Also fetch voter summary
+                // Ambil total pemilih resmi
                 val vRes = api.getVoters(limit = 1)
                 if (vRes.isSuccessful && vRes.body()?.success == true) {
                     totalDpt = vRes.body()!!.total
                 }
+
+                // Ambil banner notifikasi aktif dari dashboard
+                try {
+                    val bRes = api.getBroadcastBanner()
+                    if (bRes.isSuccessful && bRes.body()?.hasActiveBanner == true && bRes.body()?.banner != null) {
+                        broadcastBanner = bRes.body()!!.banner
+                    } else {
+                        broadcastBanner = null
+                    }
+                } catch (_: Exception) {
+                    broadcastBanner = null
+                }
             } catch (e: Exception) {
                 taskErrorMessage = "Koneksi terganggu: ${e.localizedMessage ?: "Silakan periksa jaringan"}"
-            } finally {
-                isRefreshing = false
             }
         }
     }
@@ -94,17 +111,17 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate950)
+            .background(Color(0xFFF8FAFC)) // Executive Clean White
             .verticalScroll(rememberScrollState())
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Error Banner
+        // Error Banner (Jika Ada Kendala Jaringan)
         if (taskErrorMessage != null) {
             Surface(
-                color = Rose600.copy(alpha = 0.2f),
+                color = Rose600.copy(alpha = 0.1f),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Rose500),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Rose500.copy(alpha = 0.5f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -114,15 +131,15 @@ fun HomeScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Koneksi Database",
+                            text = "Koneksi Sinkronisasi",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Rose500,
+                            color = Rose600,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = taskErrorMessage!!,
                             style = MaterialTheme.typography.bodySmall,
-                            color = White
+                            color = Color(0xFF0F172A)
                         )
                     }
                     Button(
@@ -131,17 +148,93 @@ fun HomeScreen(
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text("Coba Lagi", fontSize = 12.sp, color = White)
+                        Text("Coba Lagi", fontSize = 12.sp, color = Color.White)
                     }
                 }
             }
         }
 
-        // 1. HERO CARD: Identitas Petugas
+        // ========================================================
+        // 1. BANNER NOTIFIKASI / PENGUMUMAN BERGAMBAR (DARI DASHBOARD)
+        // Otomatis tersembunyi (HIDDEN/GONE) jika tidak ada pengumuman aktif
+        // ========================================================
+        if (broadcastBanner != null && broadcastBanner?.isActive == true) {
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(18.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 3.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Surface(
+                            color = Color(0xFF0F2042),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = "📢 " + (broadcastBanner?.category ?: "PENGUMUMAN RESMI"),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFCD34D),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { broadcastBanner = null },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (!broadcastBanner?.imageUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = broadcastBanner?.imageUrl,
+                            contentDescription = "Poster Pengumuman",
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+
+                    Text(
+                        text = broadcastBanner?.title ?: "",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F2042)
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = broadcastBanner?.content ?: "",
+                        fontSize = 12.sp,
+                        color = Color(0xFF475569),
+                        lineHeight = 17.sp
+                    )
+                }
+            }
+        }
+
+        // ========================================================
+        // 2. HERO CARD: Identitas Petugas (Eksekutif Putih & Deep Navy)
+        // Tombol reload manual sudah DIHAPUS TOTAL sesuai instruksi!
+        // ========================================================
         Surface(
-            color = Navy900,
+            color = Color.White,
             shape = RoundedCornerShape(22.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Blue900.copy(alpha = 0.6f)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            shadowElevation = 3.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onNavigateToProfile() }
@@ -156,12 +249,12 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Officer Avatar / Photo
+                        // Foto Profil / Avatar Petugas
                         Box(contentAlignment = Alignment.BottomEnd) {
                             Surface(
                                 shape = CircleShape,
-                                color = Blue950,
-                                border = androidx.compose.foundation.BorderStroke(2.dp, Blue400),
+                                color = Color(0xFF0F2042),
+                                border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF2563EB)),
                                 modifier = Modifier.size(52.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -182,16 +275,16 @@ fun HomeScreen(
                                             text = initials,
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.Black,
-                                            color = White
+                                            color = Color.White
                                         )
                                     }
                                 }
                             }
-                            // Online indicator dot
+                            // Indikator status aktif
                             Surface(
                                 shape = CircleShape,
                                 color = Emerald500,
-                                border = androidx.compose.foundation.BorderStroke(2.dp, Navy900),
+                                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
                                 modifier = Modifier.size(14.dp)
                             ) {}
                         }
@@ -202,358 +295,256 @@ fun HomeScreen(
                             Text(
                                 text = "Selamat Bertugas,",
                                 fontSize = 11.sp,
-                                color = Slate400,
+                                color = Color(0xFF64748B),
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
                                 text = userProfile?.nama ?: "Petugas P2KD",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = White
+                                color = Color(0xFF0F2042)
                             )
                             Text(
                                 text = "${userProfile?.jabatan ?: "Petugas Pantarlih"} • ${userProfile?.assignedRw ?: "Desa Kalisalak"}",
                                 fontSize = 12.sp,
-                                color = Blue400,
+                                color = Color(0xFF2563EB),
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
 
-                    // Refresh Button
-                    IconButton(
-                        onClick = { refreshTasks() },
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(Navy800, CircleShape)
+                    // Lencana Verifikasi Resmi (Pengganti tombol reload)
+                    Surface(
+                        color = Color(0xFF0F2042).copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        if (isRefreshing) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Blue400, strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, contentDescription = "Muat Ulang", tint = Blue400, modifier = Modifier.size(18.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Verified, contentDescription = null, tint = Color(0xFF1E3A8A), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("P2KD Sah", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A))
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Status Tag & Wilayah Binaan
+                // Wilayah Binaan & Status
                 Surface(
-                    color = Blue950.copy(alpha = 0.5f),
+                    color = Color(0xFFF1F5F9),
                     shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Blue800.copy(alpha = 0.4f)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Verified, contentDescription = null, tint = Emerald400, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(text = "Status: Aktif Bertugas", fontSize = 11.sp, color = Emerald400, fontWeight = FontWeight.SemiBold)
+                        Column {
+                            Text(text = "Wilayah Penugasan", fontSize = 10.sp, color = Color(0xFF64748B))
+                            Text(
+                                text = "RW ${(userProfile?.assignedRw ?: "01").replace("RW", "").trim()} • Desa Kalisalak",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F2042)
+                            )
                         }
-                        Text(
-                            text = userProfile?.assignedTps ?: "P2KD Kalisalak",
-                            fontSize = 11.sp,
-                            color = Slate300
-                        )
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(text = "Status: Aktif Bertugas", fontSize = 11.sp, color = Emerald600, fontWeight = FontWeight.SemiBold)
+                            Text(text = "Sinkronisasi Latar Otomatis", fontSize = 10.sp, color = Color(0xFF64748B))
+                        }
                     }
                 }
             }
         }
 
-        // 2. LIVE KPI PROGRES COKLIT LAPANGAN
+        // ========================================================
+        // 3. METRIK UTAMA PROGRES COKLIT
+        // ========================================================
         Surface(
-            color = Navy900,
-            shape = RoundedCornerShape(22.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+            color = Color.White,
+            shape = RoundedCornerShape(20.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            shadowElevation = 3.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Analytics, contentDescription = null, tint = Blue400, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "PROGRES COKLIT LAPANGAN",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.8.sp,
-                            color = White
-                        )
-                    }
-
-                    val pct = if (totalDpt > 0) ((totalCocok.toFloat() / totalDpt) * 100).toInt() else 0
+                    Text(
+                        text = "Ringkasan Pemutakhiran",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F2042)
+                    )
                     Surface(
-                        color = Blue600.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Blue500.copy(alpha = 0.4f))
+                        color = Color(0xFF0F2042),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "$pct% Selesai",
+                            text = "DPT: $totalDpt Jiwa",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Blue400,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Progress Bar
-                val progressFraction = if (totalDpt > 0) (totalCocok.toFloat() / totalDpt.toFloat()) else 0f
-                LinearProgressIndicator(
-                    progress = { progressFraction.coerceIn(0f, 1f) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = Emerald500,
-                    trackColor = Slate800
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "$totalCocok dari $totalDpt Warga",
-                        fontSize = 11.sp,
-                        color = Slate400
-                    )
-                    Text(
-                        text = "${totalDpt - totalCocok} Belum Dicoklit",
-                        fontSize = 11.sp,
-                        color = Amber400
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 4 Kotak Metrik Interaktif
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    KpiMetricBox(
-                        title = "Total DPT",
-                        count = totalDpt.toString(),
-                        icon = Icons.Default.People,
-                        accentColor = Blue400,
+                    MetricBoxClean(
+                        title = "Selesai",
+                        value = "${summary.selesai}",
+                        subtitle = "Warga",
+                        color = Emerald600,
                         modifier = Modifier.weight(1f)
                     )
-                    KpiMetricBox(
-                        title = "Cocok",
-                        count = totalCocok.toString(),
-                        icon = Icons.Default.CheckCircle,
-                        accentColor = Emerald400,
+                    MetricBoxClean(
+                        title = "Belum Coklit",
+                        value = "${summary.belumSelesai}",
+                        subtitle = "Warga",
+                        color = Amber600,
                         modifier = Modifier.weight(1f)
                     )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    KpiMetricBox(
+                    MetricBoxClean(
                         title = "TMS",
-                        count = totalTms.toString(),
-                        icon = Icons.Default.Cancel,
-                        accentColor = Rose400,
-                        modifier = Modifier.weight(1f)
-                    )
-                    KpiMetricBox(
-                        title = "Rumah",
-                        count = summary.totalRumah.toString(),
-                        icon = Icons.Default.HomeWork,
-                        accentColor = Amber400,
+                        value = "${summary.perluFollowUp}",
+                        subtitle = "Tidak Sah",
+                        color = Rose600,
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
 
-        // 3. TOMBOL UTAMA: PINDAI QR STIKER RUMAH (Kamera Belakang)
-        Surface(
-            shape = RoundedCornerShape(22.dp),
-            color = Color.Transparent,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onNavigateToScan() }
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(Blue600, Indigo600)
-                        )
-                    )
-                    .padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Surface(
-                            color = White.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text(
-                                text = " AKSI UTAMA LAPANGAN ",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = White,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Pindai Stiker QR Rumah",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = White
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Buka kamera untuk scan stiker fisik atau tempel stiker baru",
-                            fontSize = 12.sp,
-                            color = White.copy(alpha = 0.85f)
-                        )
-                    }
+        // ========================================================
+        // 4. MENU AKSI CEPAT COKLIT LAPANGAN
+        // ========================================================
+        Text(
+            text = "Menu Utama Petugas",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F2042)
+        )
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Surface(
-                        shape = CircleShape,
-                        color = White.copy(alpha = 0.2f),
-                        modifier = Modifier.size(52.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.QrCodeScanner,
-                                contentDescription = "Pindai",
-                                tint = White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 4. KOTAK STIKER & STATUS SINKRONISASI
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                color = Navy900,
-                shape = RoundedCornerShape(18.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { onNavigateToTasks() }
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(text = "Rumah Terdata", fontSize = 11.sp, color = Slate400)
-                        Icon(Icons.Default.Home, contentDescription = null, tint = Blue400, modifier = Modifier.size(16.dp))
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "${summary.totalRumah} Rumah",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = White
-                    )
-                }
-            }
-
-            Surface(
-                color = Navy900,
-                shape = RoundedCornerShape(18.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { onNavigateToSync() }
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(text = "Sinkronisasi Cloud", fontSize = 11.sp, color = Slate400)
-                        Icon(
-                            if (pendingSyncCount > 0) Icons.Default.Sync else Icons.Default.CloudDone,
-                            contentDescription = null,
-                            tint = if (pendingSyncCount > 0) Amber400 else Emerald400,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = if (pendingSyncCount > 0) "$pendingSyncCount Menunggu" else "Otomatis Aktif",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (pendingSyncCount > 0) Amber400 else Emerald400
-                    )
-                }
-            }
+            HomeActionCardClean(
+                title = "Data Pemilih",
+                subtitle = "Verifikasi warga",
+                icon = Icons.Default.ListAlt,
+                badgeColor = Color(0xFF2563EB),
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToTasks
+            )
+            HomeActionCardClean(
+                title = "Scan QR Rumah",
+                subtitle = "Pindai stiker fisik",
+                icon = Icons.Default.QrCodeScanner,
+                badgeColor = Color(0xFF059669),
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToScan
+            )
         }
-                Spacer(modifier = Modifier.height(30.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            HomeActionCardClean(
+                title = "Rumah Terdata",
+                subtitle = "Daftar stiker sah",
+                icon = Icons.Default.HomeWork,
+                badgeColor = Color(0xFF0F2042),
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToRegisteredHouses
+            )
+            HomeActionCardClean(
+                title = "Cloud Sync",
+                subtitle = if (pendingSyncCount > 0) "$pendingSyncCount Menunggu" else "Otomatis Aktif",
+                icon = if (pendingSyncCount > 0) Icons.Default.Sync else Icons.Default.CloudDone,
+                badgeColor = if (pendingSyncCount > 0) Amber600 else Emerald600,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToSync
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
 @Composable
-fun KpiMetricBox(
+fun MetricBoxClean(
     title: String,
-    count: String,
-    icon: ImageVector,
-    accentColor: Color,
+    value: String,
+    subtitle: String,
+    color: Color,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Slate950,
-        shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+        color = Color(0xFFF8FAFC),
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = modifier
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = title, fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = color)
+            Text(text = subtitle, fontSize = 10.sp, color = Color(0xFF94A3B8))
+        }
+    }
+}
+
+@Composable
+fun HomeActionCardClean(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    badgeColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 2.dp,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Surface(
+                color = badgeColor.copy(alpha = 0.12f),
                 shape = CircleShape,
-                color = accentColor.copy(alpha = 0.15f),
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(42.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(18.dp))
+                    Icon(icon, contentDescription = null, tint = badgeColor, modifier = Modifier.size(22.dp))
                 }
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Text(text = title, fontSize = 11.sp, color = Slate400, fontWeight = FontWeight.Medium)
-                Text(text = count, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = White)
-            }
+            Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F2042))
+            Text(text = subtitle, fontSize = 11.sp, color = Color(0xFF64748B))
         }
     }
 }
