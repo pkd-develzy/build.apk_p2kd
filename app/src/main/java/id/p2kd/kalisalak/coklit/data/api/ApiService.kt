@@ -80,4 +80,11 @@ interface ApiService {
 
     @DELETE("api/app/notifications/token")
     suspend fun revokeDeviceToken(): Response<Map<String, Any>>
+
+    // App Version & In-App Update
+    @GET("api/app/version")
+    suspend fun checkAppVersion(
+        @Header("x-app-version") currentVersion: String? = null
+    ): Response<VersionCheckResponse>
+
 }

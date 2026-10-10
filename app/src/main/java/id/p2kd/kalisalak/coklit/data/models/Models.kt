@@ -377,3 +377,36 @@ data class DeviceTokenRequest(
     @SerializedName("token") val token: String,
     @SerializedName("deviceModel") val deviceModel: String? = null
 )
+
+// 13. App Version & In-App Update Models
+data class VersionCheckResponse(
+    @SerializedName("success") val success: Boolean = false,
+    @SerializedName("buildIdentity") val buildIdentity: BuildIdentity? = null,
+    @SerializedName("updateStatus") val updateStatus: UpdateStatus? = null
+)
+
+data class BuildIdentity(
+    @SerializedName("latestVersion") val latestVersion: String? = null,
+    @SerializedName("apkDownloadUrl") val apkDownloadUrl: String? = null,
+    @SerializedName("releaseNotes") val releaseNotes: List<String> = emptyList()
+)
+
+data class UpdateStatus(
+    @SerializedName("latestVersion") val latestVersion: String = "",
+    @SerializedName("updateAvailable") val updateAvailable: Boolean = false,
+    @SerializedName("updateRequired") val updateRequired: Boolean = false,
+    @SerializedName("apkDownloadUrl") val apkDownloadUrl: String = "",
+    @SerializedName("apkFileName") val apkFileName: String = ""
+)
+
+data class GitHubReleaseResponse(
+    @SerializedName("tag_name") val tagName: String = "",
+    @SerializedName("body") val body: String = "",
+    @SerializedName("html_url") val htmlUrl: String = "",
+    @SerializedName("assets") val assets: List<GitHubAsset> = emptyList()
+)
+
+data class GitHubAsset(
+    @SerializedName("name") val name: String = "",
+    @SerializedName("browser_download_url") val browserDownloadUrl: String = ""
+)
