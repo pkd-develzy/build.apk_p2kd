@@ -20,6 +20,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -42,16 +46,36 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
 
+    var isBackgroundLocked by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Background-to-Foreground Auto-Lock: Wajib Masukkan PIN / Sidik Jari / Password saat aplikasi kembali dari latar belakang
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                // Ketika aplikasi diminimize ke latar belakang
+                if (sessionManager.isLoggedIn()) {
+                    isBackgroundLocked = true
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val shouldLock = sessionManager.isAutoLockTriggered()
     val startDestination = if (sessionManager.getToken() != null && !shouldLock) "main" else "login"
 
     // In-memory state for current visit verification list
     var currentVerifikasiList by remember { mutableStateOf<List<MemberVerificationPayload>>(emptyList()) }
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = startDestination
+        ) {
         composable("login") {
             LoginScreen(
                 sessionManager = sessionManager,
@@ -274,6 +298,22 @@ fun AppNavigation() {
             )
         }
     }
+
+    // OVERLAY KUNCI LATAR BELAKANG: Wajib PIN / Sidik Jari / Password saat kembali dari background
+    if (isBackgroundLocked && sessionManager.isLoggedIn()) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFFF8FAFC)
+        ) {
+            LoginScreen(
+                sessionManager = sessionManager,
+                onLoginSuccess = {
+                    isBackgroundLocked = false
+                }
+            )
+        }
+    }
+    }
 }
 
 /**
@@ -298,6 +338,66 @@ fun MainContainerScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Beranda, 1: Data Pemilih, 3: Rumah, 4: Akun
     var unreadNotificationCount by remember { mutableIntStateOf(0) }
+    var showExitConfirmDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Back Button Handler: Cegah langsung keluar 1 kali, konfirmasi dulu!
+    BackHandler(enabled = true) {
+        if (selectedTab != 0) {
+            selectedTab = 0 // Kembali ke tab Beranda dulu
+        } else {
+            showExitConfirmDialog = true // Minta konfirmasi sebelum keluar aplikasi
+        }
+    }
+
+    // Dialog Konfirmasi Keluar Aplikasi Resmi
+    if (showExitConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.ExitToApp,
+                    contentDescription = null,
+                    tint = Rose500,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    "Konfirmasi Keluar Aplikasi",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Text(
+                    "Apakah Anda yakin ingin menutup aplikasi PETUGAS P2KD? Sesi Anda akan tetap aman dan terkunci.",
+                    color = Color(0xFF475569),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitConfirmDialog = false
+                        (context as? android.app.Activity)?.finishAffinity()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Rose600),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Keluar Aplikasi", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitConfirmDialog = false }) {
+                    Text("Batal", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White
+        )
+    }
 
     // Fetch unread notification count
     LaunchedEffect(Unit) {

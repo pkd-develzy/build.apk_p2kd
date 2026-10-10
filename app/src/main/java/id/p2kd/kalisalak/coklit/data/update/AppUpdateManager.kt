@@ -35,7 +35,7 @@ object AppUpdateManager {
         "https://github.com/pkd-develzy/build.apk_p2kd/releases/latest/download/PETUGAS_P2KD.apk"
 
     /**
-     * Membandingkan 2 semver string (misal: "1.10.3" vs "1.5.2")
+     * Membandingkan 2 semver string (misal: "1.10.4" vs "1.5.2")
      * Return: -1 jika v1 < v2, 0 jika sama, 1 jika v1 > v2
      */
     fun compareVersions(v1: String, v2: String): Int {
@@ -69,9 +69,9 @@ object AppUpdateManager {
                 @Suppress("DEPRECATION")
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }
-            pInfo.versionName ?: "1.10.3"
+            pInfo.versionName ?: "1.10.4"
         } catch (_: Exception) {
-            "1.10.3"
+            "1.10.4"
         }
     }
 
