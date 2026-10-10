@@ -73,7 +73,7 @@ fun HomeScreen(
         coroutineScope.launch {
             taskErrorMessage = null
             try {
-                val api = ApiClient.getService(sessionManager)
+                val api = ApiClient.getService(actualSessionManager)
                 val res = api.getTasks(userProfile?.assignedRw, userProfile?.assignedTps)
                 if (res.isSuccessful && res.body()?.success == true) {
                     summary = res.body()!!.summary
