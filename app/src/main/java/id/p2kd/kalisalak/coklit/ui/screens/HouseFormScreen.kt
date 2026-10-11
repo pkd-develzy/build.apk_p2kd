@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import id.p2kd.kalisalak.coklit.data.api.ApiClient
 import id.p2kd.kalisalak.coklit.data.models.RumahItem
 import id.p2kd.kalisalak.coklit.data.models.RumahRequest
+import id.p2kd.kalisalak.coklit.data.location.LocationHelper
 import id.p2kd.kalisalak.coklit.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -46,6 +47,29 @@ fun HouseFormScreen(
     var rw by remember { mutableStateOf(existingRumah?.rw ?: defaultRw) }
     var nomorRumah by remember { mutableStateOf(existingRumah?.nomorRumah ?: "") }
     var keteranganLokasi by remember { mutableStateOf(existingRumah?.keteranganLokasi ?: "") }
+    var koordinatLat by remember { mutableStateOf(existingRumah?.koordinatLat) }
+    var koordinatLng by remember { mutableStateOf(existingRumah?.koordinatLng) }
+    var locationAccuracy by remember { mutableStateOf<Float?>(null) }
+    var isFetchingLocation by remember { mutableStateOf(false) }
+
+    fun fetchRealtimeGps() {
+        isFetchingLocation = true
+        LocationHelper.getHighAccuracyLocation(context) { lat, lng, acc ->
+            isFetchingLocation = false
+            if (lat != null && lng != null) {
+                koordinatLat = lat
+                koordinatLng = lng
+                locationAccuracy = acc
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (koordinatLat == null || koordinatLng == null) {
+            fetchRealtimeGps()
+        }
+    }
+
 
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }

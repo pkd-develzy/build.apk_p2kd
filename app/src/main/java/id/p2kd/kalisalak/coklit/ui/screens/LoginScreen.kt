@@ -66,11 +66,33 @@ fun LoginScreen(
     var resetDialogType by remember { mutableStateOf("PIN") } // "PIN" or "PASSWORD"
 
     // Form Login Standar State
-    var username by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(actualSessionManager.getUserProfile()?.username ?: actualSessionManager.getLastLinkedUser()?.username ?: "") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    // Otomatis picu sensor sidik jari (Auto-Prompt Biometrik) jika diaktifkan
+    LaunchedEffect(isQuickPinMode) {
+        if (isQuickPinMode && actualSessionManager.isBiometricEnabled() && context is FragmentActivity) {
+            if (BiometricAuthHelper.isBiometricAvailable(context)) {
+                delay(300)
+                BiometricAuthHelper.promptBiometric(
+                    activity = context,
+                    title = "Verifikasi Sidik Jari Petugas",
+                    subtitle = "Tempelkan jari pada sensor untuk membuka aplikasi",
+                    onSuccess = {
+                        actualSessionManager.setAppLocked(false)
+                        actualSessionManager.updateLastActiveTime()
+                        onLoginSuccess()
+                    },
+                    onError = { err ->
+                        pinError = err
+                    }
+                )
+            }
+        }
+    }
+
 
     // DIALOG PEMULIHAN TELEGRAM (LUPA PIN / LUPA PASSWORD)
     if (showTelegramResetDialog) {
@@ -363,6 +385,7 @@ fun LoginScreen(
                                                                 title = "Verifikasi Sidik Jari Petugas",
                                                                 subtitle = "Tempelkan jari pada sensor untuk membuka",
                                                                 onSuccess = {
+                                                                    actualSessionManager.setAppLocked(false)
                                                                     actualSessionManager.updateLastActiveTime()
                                                                     onLoginSuccess()
                                                                 },
@@ -392,6 +415,7 @@ fun LoginScreen(
                                                         if (nextPin.length == 6) {
                                                             // Validasi PIN 6 Digit
                                                             if (actualSessionManager.verifyPin(nextPin)) {
+                                                                actualSessionManager.setAppLocked(false)
                                                                 actualSessionManager.updateLastActiveTime()
                                                                 onLoginSuccess()
                                                             } else {
@@ -717,6 +741,14 @@ fun LoginScreen(
 
                                     coroutineScope.launch {
                                         try {
+                                            // 1. Cek validasi offline kata sandi lokal terlebih dahulu jika sesi aktif
+                                            if (actualSessionManager.isLoggedIn() && actualSessionManager.verifyPassword(password.trim())) {
+                                                actualSessionManager.setAppLocked(false)
+                                                actualSessionManager.updateLastActiveTime()
+                                                onLoginSuccess()
+                                                return@launch
+                                            }
+
                                             val api = ApiClient.getService(actualSessionManager)
                                             val response = api.login(LoginRequest(username.trim(), password))
 
@@ -724,6 +756,9 @@ fun LoginScreen(
                                                 val body = response.body()!!
                                                 if (body.token != null && body.user != null) {
                                                     actualSessionManager.saveSession(body.token, body.user)
+                                                    actualSessionManager.savePasswordHash(password.trim())
+                                                    actualSessionManager.setAppLocked(false)
+                                                    actualSessionManager.updateLastActiveTime()
                                                     onLoginSuccess()
                                                 } else {
                                                     errorMessage = "Respon server tidak valid."
@@ -739,7 +774,13 @@ fun LoginScreen(
                                                 }
                                             }
                                         } catch (e: Exception) {
-                                            errorMessage = "Gagal terhubung ke database: " + (e.localizedMessage ?: "Periksa koneksi internet Anda.")
+                                            if (actualSessionManager.isLoggedIn() && actualSessionManager.verifyPassword(password.trim())) {
+                                                actualSessionManager.setAppLocked(false)
+                                                actualSessionManager.updateLastActiveTime()
+                                                onLoginSuccess()
+                                            } else {
+                                                errorMessage = "Gagal terhubung ke database: " + (e.localizedMessage ?: "Periksa koneksi internet Anda.")
+                                            }
                                         } finally {
                                             isLoading = false
                                         }

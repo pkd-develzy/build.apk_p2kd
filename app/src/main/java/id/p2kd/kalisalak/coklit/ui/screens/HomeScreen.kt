@@ -70,6 +70,14 @@ fun HomeScreen(
     var totalDpt by remember { mutableIntStateOf(7787) }
     var taskErrorMessage by remember { mutableStateOf<String?>(null) }
     var broadcastBanner by remember { mutableStateOf<BroadcastBannerItem?>(null) }
+    var showPinSecurityPromo by remember {
+        mutableStateOf(!actualSessionManager.hasPin() && !actualSessionManager.isBiometricEnabled())
+    }
+    var showQuickPinSetupDialog by remember { mutableStateOf(false) }
+    var newPinInput by remember { mutableStateOf("") }
+    var confirmPinInput by remember { mutableStateOf("") }
+    var pinSetupError by remember { mutableStateOf<String?>(null) }
+
 
     fun refreshTasks() {
         coroutineScope.launch {
@@ -511,6 +519,168 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
     }
+
+    // POP-UP IKLAN EDUKASI KEAMANAN (UNTUK PETUGAS YANG BELUM SETEL PIN/FINGERPRINT)
+    if (showPinSecurityPromo) {
+        AlertDialog(
+            onDismissRequest = { showPinSecurityPromo = false },
+            icon = {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFEFF6FF),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Security,
+                            contentDescription = null,
+                            tint = Blue600,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                }
+            },
+            title = {
+                Text(
+                    text = "Akses Lebih Cepat & Aman!",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = Color(0xFF0F172A),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Akun Anda saat ini belum dilindungi 6-Digit PIN atau Sidik Jari. Anda wajib mengetik kata sandi setiap kali membuka aplikasi.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF475569),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        lineHeight = 18.sp
+                    )
+                    Surface(
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    ) {
+                        Text(
+                            text = "💡 Aktifkan PIN sekarang agar membuka aplikasi saat coklit warga hanya butuh 1 detik dan data pemilih tetap terlindungi.",
+                            fontSize = 12.sp,
+                            color = Color(0xFF0F172A),
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(10.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPinSecurityPromo = false
+                        showQuickPinSetupDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("🔒 Atur PIN Sekarang", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPinSecurityPromo = false }) {
+                    Text("Nanti Saja", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    // DIALOG FORM PEMBUATAN PIN 6-DIGIT CEPAT
+    if (showQuickPinSetupDialog) {
+        AlertDialog(
+            onDismissRequest = { showQuickPinSetupDialog = false },
+            title = {
+                Text(
+                    text = "Buat 6-Digit PIN Petugas",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Masukkan 6 digit angka rahasia untuk membuka aplikasi secara instan di lapangan:",
+                        fontSize = 12.sp,
+                        color = Color(0xFF475569)
+                    )
+
+                    OutlinedTextField(
+                        value = newPinInput,
+                        onValueChange = { if (it.length <= 6 && it.all { char -> char.isDigit() }) newPinInput = it },
+                        label = { Text("PIN Baru (6 Angka)") },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = confirmPinInput,
+                        onValueChange = { if (it.length <= 6 && it.all { char -> char.isDigit() }) confirmPinInput = it },
+                        label = { Text("Ulangi PIN") },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    if (pinSetupError != null) {
+                        Text(
+                            text = pinSetupError ?: "",
+                            color = Color(0xFFDC2626),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newPinInput.length != 6) {
+                            pinSetupError = "PIN harus terdiri dari 6 angka."
+                        } else if (newPinInput != confirmPinInput) {
+                            pinSetupError = "Konfirmasi PIN tidak cocok."
+                        } else {
+                            actualSessionManager.setPin(newPinInput)
+                            showQuickPinSetupDialog = false
+                            android.widget.Toast.makeText(context, "6-Digit PIN berhasil diaktifkan!", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue600),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Simpan PIN", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showQuickPinSetupDialog = false }) {
+                    Text("Batal", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
 }
 
 @Composable

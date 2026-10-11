@@ -44,6 +44,8 @@ class EncryptedSessionManager(val context: Context) {
         private const val KEY_USER_PROFILE = "user_profile_json"
         private const val KEY_LAST_LINKED_USER = "last_linked_user_json"
         private const val KEY_PIN_HASH = "security_pin_hash"
+        private const val KEY_APP_LOCKED = "security_is_app_locked"
+        private const val KEY_OFFLINE_PASSWORD_HASH = "security_offline_password_hash"
         private const val KEY_BIOMETRIC_ENABLED = "security_biometric_enabled"
         private const val KEY_AUTO_LOCK_MINUTES = "security_auto_lock_minutes"
         private const val KEY_LAST_ACTIVE_TIME = "security_last_active_time"
@@ -62,6 +64,8 @@ class EncryptedSessionManager(val context: Context) {
         if (isDifferentUser) {
             // Pengguna berganti! Bersihkan pengaturan akun lama (PIN, Biometrik, Telegram link)
             editor.remove(KEY_PIN_HASH)
+            .remove(KEY_APP_LOCKED)
+            .remove(KEY_OFFLINE_PASSWORD_HASH)
             editor.remove(KEY_BIOMETRIC_ENABLED)
             editor.remove(KEY_TELEGRAM_LINKED)
             editor.remove(KEY_TELEGRAM_USERNAME)
@@ -214,8 +218,40 @@ class EncryptedSessionManager(val context: Context) {
         return sharedPreferences.getLong(KEY_LAST_ACTIVE_TIME, System.currentTimeMillis())
     }
 
+    
+    // ==========================================
+    // PASSWORD LOCAL ENCRYPTION & APP LOCK
+    // ==========================================
+
+    private fun hashPassword(password: String): String {
+        val salt = "P2KD_PASSWORD_SALT_" + (getUserProfile()?.username ?: "OFFICER")
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest((salt + password).toByteArray())
+        return digest.fold("") { str, it -> str + "%02x".format(it) }
+    }
+
+    fun savePasswordHash(password: String) {
+        if (password.isNotBlank()) {
+            sharedPreferences.edit().putString(KEY_OFFLINE_PASSWORD_HASH, hashPassword(password)).apply()
+        }
+    }
+
+    fun verifyPassword(password: String): Boolean {
+        val saved = sharedPreferences.getString(KEY_OFFLINE_PASSWORD_HASH, null) ?: return false
+        return saved == hashPassword(password)
+    }
+
+    fun isAppLocked(): Boolean {
+        if (!isLoggedIn()) return false
+        return sharedPreferences.getBoolean(KEY_APP_LOCKED, true)
+    }
+
+    fun setAppLocked(locked: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_APP_LOCKED, locked).apply()
+    }
+
     fun isAutoLockTriggered(): Boolean {
-        if (!hasPin() && !isBiometricEnabled()) return false
+        if (isAppLocked()) return true
         val timeoutMinutes = getAutoLockMinutes()
         val lastActive = getLastActiveTime()
         val elapsedMillis = System.currentTimeMillis() - lastActive

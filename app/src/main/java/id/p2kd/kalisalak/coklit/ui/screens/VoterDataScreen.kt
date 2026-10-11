@@ -487,7 +487,7 @@ fun VoterDataScreen(
                     var isRwDropdownOpen by remember { mutableStateOf(false) }
                     var isRtDropdownOpen by remember { mutableStateOf(false) }
                     val allRwOptions = remember { (1..13).map { String.format("%02d", it) } }
-                    val allRtOptions = remember { (1..5).map { String.format("%02d", it) } }
+                    val allRtOptions = remember { (1..3).map { String.format("%02d", it) } }
 
                     Column {
                         Text("Pilih RW Tujuan Baru (13 RW Desa Kalisalak):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F2042))
@@ -548,7 +548,7 @@ fun VoterDataScreen(
                         }
                     }
 
-                    // Pilihan RT Tujuan Baru via Dropdown (RT 01 s/d RT 05)
+                    // Pilihan RT Tujuan Baru via Dropdown (RT 01 s/d RT 03)
                     Column {
                         Text("Pilih RT Tujuan Baru:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F2042))
                         Spacer(modifier = Modifier.height(6.dp))

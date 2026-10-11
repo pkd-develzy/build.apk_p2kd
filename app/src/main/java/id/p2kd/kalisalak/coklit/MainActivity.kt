@@ -56,7 +56,9 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sessionManager = EncryptedSessionManager(this)
-        sessionManager.updateLastActiveTime()
+        if (sessionManager.isLoggedIn()) {
+            sessionManager.setAppLocked(true)
+        }
         enableEdgeToEdge()
 
         setContent {
@@ -95,6 +97,13 @@ class MainActivity : FragmentActivity() {
         super.onPause()
         if (::sessionManager.isInitialized) {
             sessionManager.updateLastActiveTime()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (::sessionManager.isInitialized && sessionManager.isLoggedIn()) {
+            sessionManager.setAppLocked(true)
         }
     }
 
@@ -152,9 +161,17 @@ fun PermissionGuardWrapper(
     val context = LocalContext.current
 
     val requiredPermissions = remember {
-        val list = mutableListOf(Manifest.permission.CAMERA)
+        val list = mutableListOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             list.add(Manifest.permission.POST_NOTIFICATIONS)
+            list.add(Manifest.permission.READ_MEDIA_IMAGES)
+            list.add(Manifest.permission.READ_MEDIA_VIDEO)
+        } else {
+            list.add(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
         list.toTypedArray()
     }
@@ -236,7 +253,7 @@ fun PermissionGuardWrapper(
                         )
 
                         Text(
-                            text = "Untuk menggunakan fitur Pindai QR Stiker dan menerima pembaruan data pemilih, berikan izin Kamera dan Notifikasi.",
+                            text = "Untuk operasional coklit lapangan, berikan izin Kamera (Pindai QR), Lokasi Presisi Tinggi (Koordinat Rumah GPS), Penyimpanan & Galeri Foto, serta Notifikasi Sistem.",
                             fontSize = 13.sp,
                             color = Color(0xFF475569),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,

@@ -46,15 +46,19 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
 
-    var isBackgroundLocked by remember { mutableStateOf(false) }
+    var isBackgroundLocked by remember { mutableStateOf(sessionManager.isLoggedIn() && sessionManager.isAppLocked()) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Background-to-Foreground Auto-Lock: Wajib Masukkan PIN / Sidik Jari / Password saat aplikasi kembali dari latar belakang
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                // Ketika aplikasi diminimize ke latar belakang
                 if (sessionManager.isLoggedIn()) {
+                    sessionManager.setAppLocked(true)
+                    isBackgroundLocked = true
+                }
+            } else if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
+                if (sessionManager.isLoggedIn() && sessionManager.isAppLocked()) {
                     isBackgroundLocked = true
                 }
             }
@@ -65,7 +69,7 @@ fun AppNavigation() {
         }
     }
 
-    val shouldLock = sessionManager.isAutoLockTriggered()
+    val shouldLock = sessionManager.isAppLocked()
     val startDestination = if (sessionManager.getToken() != null && !shouldLock) "main" else "login"
 
     // In-memory state for current visit verification list
@@ -308,6 +312,7 @@ fun AppNavigation() {
             LoginScreen(
                 sessionManager = sessionManager,
                 onLoginSuccess = {
+                    sessionManager.setAppLocked(false)
                     isBackgroundLocked = false
                 }
             )
