@@ -1,6 +1,7 @@
 package id.p2kd.kalisalak.coklit.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -1145,7 +1146,7 @@ fun VoterDataScreen(
         var newTglLahir by remember { mutableStateOf("2000-01-01") }
         var newJk by remember { mutableStateOf("L") }
         var newKawin by remember { mutableStateOf("Belum Kawin") }
-        var newRw by remember { mutableStateOf(assignedRw.replace(Regex("[^0-9]"), "").ifEmpty { "01" }.padStart(2, '0')) }
+        var newRw by remember { mutableStateOf((ApiClient.getSessionManager(context).getUserProfile()?.assignedRw ?: "01").replace(Regex("[^0-9]"), "").ifEmpty { "01" }.padStart(2, '0')) }
         var newRt by remember { mutableStateOf("01") }
         var newAlamat by remember { mutableStateOf("") }
         var newDisabilitas by remember { mutableStateOf("Bukan Penyandang Disabilitas") }
