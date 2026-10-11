@@ -13,8 +13,8 @@ android {
         applicationId = "id.p2kd.kalisalak.coklit"
         minSdk = 24
         targetSdk = 34
-        versionCode = 16
-        versionName = "1.10.6"
+        versionCode = 17
+        versionName = "1.10.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

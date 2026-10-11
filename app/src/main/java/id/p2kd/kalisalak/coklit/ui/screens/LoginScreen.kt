@@ -163,10 +163,56 @@ fun LoginScreen(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Bantuan Langsung Panitia:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                            Text("Bot Telegram Resmi: @pantarlih_bot", fontSize = 11.sp, color = Blue600)
-                            Text("WhatsApp Sekretariat: 0851-7154-2025", fontSize = 11.sp, color = Emerald600)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        try {
+                                            val waUri = Uri.parse("https://wa.me/6285171542025?text=Halo%20Sekretariat%20P2KD,%20saya%20petugas%20dengan%20akun%20${reqUsername}%20membutuhkan%20bantuan%20reset%20kredensial.")
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, waUri))
+                                        } catch (_: Exception) {}
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                ) {
+                                    Text("WA Panitia", fontSize = 11.sp, color = Emerald600, fontWeight = FontWeight.SemiBold)
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        try {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/pantarlih_bot")))
+                                        } catch (_: Exception) {}
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Telegram Bot", fontSize = 11.sp, color = Blue600, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                            // Opsi Alternatif: Masuk Menggunakan Kata Sandi
+                            Button(
+                                onClick = {
+                                    showTelegramResetDialog = false
+                                    isQuickPinMode = false
+                                    if (reqUsername.isNotBlank()) {
+                                        username = reqUsername
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(36.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(13.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Masuk Pakai Kata Sandi", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                            }
                         }
                     }
                 }
@@ -189,13 +235,33 @@ fun LoginScreen(
                                     if (resetDialogType == "PIN") {
                                         val res = ApiClient.api.forgotPin(id.p2kd.kalisalak.coklit.data.models.ForgotPinRequest(reqUsername.trim()))
                                         isReqSuccess = res.isSuccessful && res.body()?.success == true
-                                        respMessage = res.body()?.message ?: "Gagal memproses permintaan reset PIN."
-                                        respResetUrl = res.body()?.resetUrl
+                                        if (isReqSuccess) {
+                                            respMessage = res.body()?.message ?: "Tautan pemulihan PIN berhasil dikirim ke Telegram."
+                                            respResetUrl = res.body()?.resetUrl
+                                        } else {
+                                            val errorJson = try {
+                                                val errBody = res.errorBody()?.string()
+                                                if (!errBody.isNullOrBlank()) {
+                                                    org.json.JSONObject(errBody).optString("message", "")
+                                                } else ""
+                                            } catch (_: Exception) { "" }
+                                            respMessage = if (errorJson.isNotBlank()) errorJson else (res.body()?.message ?: "Gagal memproses permintaan reset PIN. Pastikan akun terdaftar di sistem P2KD.")
+                                        }
                                     } else {
                                         val res = ApiClient.api.forgotPassword(id.p2kd.kalisalak.coklit.data.models.ForgotPasswordRequest(reqUsername.trim()))
                                         isReqSuccess = res.isSuccessful && res.body()?.success == true
-                                        respMessage = res.body()?.message ?: "Gagal memproses permintaan reset kata sandi."
-                                        respResetUrl = res.body()?.resetUrl
+                                        if (isReqSuccess) {
+                                            respMessage = res.body()?.message ?: "Tautan pemulihan kata sandi berhasil dikirim ke Telegram."
+                                            respResetUrl = res.body()?.resetUrl
+                                        } else {
+                                            val errorJson = try {
+                                                val errBody = res.errorBody()?.string()
+                                                if (!errBody.isNullOrBlank()) {
+                                                    org.json.JSONObject(errBody).optString("message", "")
+                                                } else ""
+                                            } catch (_: Exception) { "" }
+                                            respMessage = if (errorJson.isNotBlank()) errorJson else (res.body()?.message ?: "Gagal memproses permintaan reset kata sandi.")
+                                        }
                                     }
 
                                     isSendingTelegram = false
