@@ -1472,10 +1472,10 @@ fun VoterDataScreen(
 
                     // 9. PILIHAN RT
                     Column {
-                        Text("Rukun Tetangga (RT)*", fontSize = 11.sp, color = Color(0xFF64748B))
+                        Text("Rukun Tetangga (RT) — Wajib RT 01, RT 02, RT 03*", fontSize = 11.sp, color = Color(0xFF64748B))
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("01", "02", "03", "04", "05").forEach { rtOpt ->
+                            listOf("01", "02", "03").forEach { rtOpt ->
                                 val isSel = newRt == rtOpt
                                 Surface(
                                     color = if (isSel) Color(0xFF2563EB) else Color(0xFFF1F5F9),

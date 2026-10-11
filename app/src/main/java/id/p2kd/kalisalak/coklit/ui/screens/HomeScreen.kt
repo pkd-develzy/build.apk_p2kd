@@ -170,6 +170,10 @@ fun HomeScreen(
         // Otomatis tersembunyi (HIDDEN/GONE) jika tidak ada pengumuman aktif
         // ========================================================
         if (broadcastBanner != null && broadcastBanner?.isActive == true) {
+            val hasTitle = !broadcastBanner?.title.isNullOrBlank()
+            val hasContent = !broadcastBanner?.content.isNullOrBlank()
+            val hasImage = !broadcastBanner?.imageUrl.isNullOrBlank()
+
             Surface(
                 color = Color.White,
                 shape = RoundedCornerShape(18.dp),
@@ -178,61 +182,69 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
+                    // Header Badge Kategori (TIDAK BISA DIHAPUS OLEH PENGGUNA)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Start,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Surface(
                             color = Color(0xFF0F2042),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(
-                                text = "📢 " + (broadcastBanner?.category ?: "PENGUMUMAN RESMI"),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFCD34D),
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                        IconButton(
-                            onClick = { broadcastBanner = null },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Campaign,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFCD34D),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = broadcastBanner?.category?.ifBlank { "PENGUMUMAN RESMI" } ?: "PENGUMUMAN RESMI",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFCD34D)
+                                )
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    if (!broadcastBanner?.imageUrl.isNullOrBlank()) {
+                    if (hasImage) {
+                        Spacer(modifier = Modifier.height(10.dp))
                         AsyncImage(
                             model = broadcastBanner?.imageUrl,
                             contentDescription = "Poster Pengumuman",
                             contentScale = ContentScale.FillWidth,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(150.dp)
+                                .heightIn(min = 140.dp, max = 320.dp)
                                 .clip(RoundedCornerShape(12.dp))
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
                     }
 
-                    Text(
-                        text = broadcastBanner?.title ?: "",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F2042)
-                    )
+                    if (hasTitle) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = broadcastBanner?.title ?: "",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F2042)
+                        )
+                    }
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = broadcastBanner?.content ?: "",
-                        fontSize = 12.sp,
-                        color = Color(0xFF475569),
-                        lineHeight = 17.sp
-                    )
+                    if (hasContent) {
+                        Spacer(modifier = Modifier.height(if (hasTitle) 4.dp else 8.dp))
+                        Text(
+                            text = broadcastBanner?.content ?: "",
+                            fontSize = 12.sp,
+                            color = Color(0xFF475569),
+                            lineHeight = 17.sp
+                        )
+                    }
                 }
             }
         }

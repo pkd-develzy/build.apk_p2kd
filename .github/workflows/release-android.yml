@@ -11,7 +11,7 @@ on:
       tag_name:
         description: 'Tag name for GitHub Release (e.g. v1.0.0)'
         required: false
-        default: 'v1.10.7'
+        default: 'v1.10.8'
 
 permissions:
   contents: write
@@ -155,7 +155,7 @@ jobs:
           fi
 
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then
-            TAG="v1.10.7"
+            TAG="v1.10.8"
           fi
 
           echo "Mempublikasikan GitHub Release untuk tag: $TAG"
